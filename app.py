@@ -45,7 +45,10 @@ if include_illiquid:
     st.info("🏠 *You're including illiquid assets in your FIRE projection.*\n\nThis assumes you could sell or unlock equity from property or other non-liquid holdings—like real estate, private businesses, or collectibles.")
 else:
     st.info("💰 *You're excluding illiquid assets from your FIRE projection.*\n\nThis gives a conservative view based only on accessible, investable funds like brokerage accounts, retirement accounts, and cash.")
-current_net_worth = liquid_assets  # FIRE projection will use only this
+if include_illiquid:
+    current_net_worth = liquid_assets + illiquid_assets
+else:
+    current_net_worth = liquid_assets
 st.caption("🔁 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. It’s a great way to model real-world tradeoffs.")
 total_net_worth = liquid_assets + illiquid_assets
 annual_savings = st.number_input("Annual Savings ($)", value=30000)
