@@ -5,7 +5,7 @@ from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
 
 st.image("logo.png", width=120)
 st.title("🔥 FIRE Progress Tracker")
-st.caption("Built with purpose by Goji Money Studio — tools for financial clarity and freedom.")
+st.caption("Built with purpose by Money Matters Studio — tools for financial clarity and freedom.")
 
 with st.expander("💡 What is FIRE and How Does This Tool Help?", expanded=True):
     st.markdown("""
