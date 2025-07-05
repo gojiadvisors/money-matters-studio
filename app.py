@@ -51,10 +51,41 @@ else:
     current_net_worth = liquid_assets
 st.caption("🔁 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. It’s a great way to model real-world tradeoffs.")
 total_net_worth = liquid_assets + illiquid_assets
-annual_savings = st.number_input("Annual Savings ($)", value=30000)
-target_expenses = st.number_input("Target Annual Expenses at FI ($)", value=40000)
-withdrawal_rate = st.slider("Safe Withdrawal Rate (%)", 3.0, 5.0, 4.0) / 100
-annual_return = st.slider("Expected Annual Return (%)", 4.0, 10.0, 7.0) / 100
+# Annual Savings
+annual_savings = st.number_input(
+    "Annual Savings ($)",
+    value=30000,
+    step=100,
+    help="Total amount you save each year towards FI, including retirement and brokerage contributions."
+)   
+# Target Annual Expenses at FI
+target_expenses = st.number_input(
+    "Target Annual Expenses at FI ($)",
+    value=50000,
+    step=100,
+    help="How much you expect to spend each year once you’ve reached financial independence. Think: housing, food, travel, healthcare... your lifestyle costs when you’re no longer working for income."
+)
+# Safe Withdrawal Rate (as a slider)
+swr_percent = st.slider(
+    "Safe Withdrawal Rate (%)",
+    min_value=2.0,
+    max_value=6.0,
+    value=4.0,
+    step=0.1,
+    help="The percentage of your portfolio you plan to withdraw each year in retirement without running out of money. A common rule of thumb is 4%, but many FIRE folks use 3–3.5% for extra safety."
+)
+withdrawal_rate = swr_percent / 100  # Convert to decimal for calculations
+
+# Expected Annual Return (as a slider)
+expected_return_percent = st.slider(
+    "Expected Annual Return (%)",
+    min_value=3.0,
+    max_value=10.0,
+    value=7.0,
+    step=0.1,
+    help="The average yearly growth rate you expect from your investments before retirement. This includes stock market returns, dividends, and interest—minus any fees or taxes."
+)
+annual_return = expected_return_percent / 100  # Convert to decimal
 
 # Calculation trigger
 if st.button("Calculate My FIRE Path"):
