@@ -84,7 +84,7 @@ if st.button("Calculate My FIRE Path"):
     """)
     st.progress(progress_pct, text=f"{progress_pct * 100:.1f}% of FIRE goal reached")
 
-    st.subheader("📣 Personalized Feedback (Based on Liquid Assets)")
+    st.subheader("📣 A Message for you")
 
     if progress_pct >= 1.0:
         st.success("🎉 Based on your liquid assets alone, you’ve reached your FIRE number! You’re financially independent—and your net worth is even higher when counting other assets.")
