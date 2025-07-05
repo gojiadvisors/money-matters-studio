@@ -9,16 +9,16 @@ st.caption("Built with purpose by Money Matters Studio — tools for financial c
 
 with st.expander("💡 What is FIRE and How Does This Tool Help?", expanded=True):
     st.markdown("""
-**FIRE** stands for **Financial Independence, Retire Early**—a movement focused on reclaiming time, freedom, and choice by building a nest egg large enough to support your lifestyle without needing to work for money.
+**FIRE** stands for **Financial Independence, Retire Early**, a movement focused on reclaiming time, freedom, and choice by building a nest egg large enough to support your lifestyle without needing to work for money.
 
 This tracker helps you answer one big question:
 
 > _“How close am I to financial independence, and how long will it take me to get there?”_
 
 ### What It Calculates:
-- **FIRE Number**: The amount you'd need saved to sustainably cover your future lifestyle
-- **Years to FIRE**: How long it’ll take to reach that goal, given your current savings habits
-- **Net Worth Trajectory**: A year-by-year look at your financial momentum
+- **FIRE Number**: The amount of $ you'd need saved to sustainably cover your future lifestyle
+- **Years to FIRE**: How long it’ll take to reach your FIRE Number, given your current savings habits
+- **Net Worth Trajectory**: A year-by-year look at your financial progress
 - **Progress Bar + Feedback**: Visual tools and insights to keep you motivated
 
 Customize your inputs below and explore how your financial future unfolds.
