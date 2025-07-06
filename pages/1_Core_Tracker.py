@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
 
-st.set_page_config(page_title="🔥 FIRE Progress Tracker", page_icon="🔥")
+st.set_page_config(page_title="FIRE Progress Tracker", page_icon="🔥")
 
 st.image("logo.png", width=120)
 st.title("🔥 FIRE Progress Tracker")
@@ -43,14 +43,14 @@ illiquid_assets = st.number_input(
 )
 include_illiquid = st.checkbox("Include illiquid assets (e.g. home equity) in FIRE calculation?")
 if include_illiquid:
-    st.info("🏠 *You're including illiquid assets in your FIRE projection.*\n\nThis assumes you could sell or unlock equity from property or other non-liquid holdings—like real estate, private businesses, or collectibles.")
+    st.info("🏠 *You're including illiquid assets in your FIRE projection.*\n\nThis assumes you could sell or unlock equity from property or other non-liquid holdings, like real estate, private businesses, or collectibles.")
 else:
     st.info("💰 *You're excluding illiquid assets from your FIRE projection.*\n\nThis gives a conservative view based only on accessible, investable funds like brokerage accounts, retirement accounts, and cash.")
 if include_illiquid:
     current_net_worth = liquid_assets + illiquid_assets
 else:
     current_net_worth = liquid_assets
-st.caption("🔁 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. It’s a great way to model real-world tradeoffs.")
+st.caption("🔁 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. But note: real estate cash flow and appreciation are handled in a separate module.")
 total_net_worth = liquid_assets + illiquid_assets
 # Annual Savings
 annual_savings = st.number_input(
@@ -88,85 +88,8 @@ expected_return_percent = st.slider(
 )
 annual_return = expected_return_percent / 100  # Convert to decimal
 
-#REAL ESTATE INVESTOR SECTION
-
-with st.expander("🏠 Real Estate Investor? Add rental income & expenses (optional)", expanded=False):
-    rental_income = st.number_input(
-        "Annual Rental Income ($)",
-        min_value=0.0,
-        value=0.0,
-        step=100.0,
-        help="Total rent you expect to receive from the property each year."
-    )
-
-    mortgage = st.number_input(
-        "Annual Mortgage Payments ($)",
-        min_value=0.0,
-        value=0.0,
-        step=100.0,
-        help="Total yearly mortgage payments (principal + interest)."
-    )
-
-    maintenance = st.number_input(
-        "Annual Maintenance & Repairs ($)",
-        min_value=0.0,
-        value=0.0,
-        step=100.0,
-        help="Estimated yearly cost of upkeep, repairs, and maintenance."
-    )
-
-    tax_insurance = st.number_input(
-        "Annual Property Tax & Insurance ($)",
-        min_value=0.0,
-        value=0.0,
-        step=100.0,
-        help="Combined yearly cost of property taxes and insurance."
-    )
-
-    net_re_cashflow = rental_income - mortgage - maintenance - tax_insurance
-    st.markdown(f"**Net Real Estate Cashflow:** ${net_re_cashflow:,.0f} / year")
-    include_real_estate = st.checkbox("Include net real estate cashflow in FIRE calculation?")
-
-# Adjust expenses based on inclusion toggle
-if include_real_estate:
-    adjusted_expenses = max(target_expenses - net_re_cashflow, 0)
-    st.info(f"🏠 You're factoring in ${net_re_cashflow:,.0f} in net rental income to reduce your annual expenses.")
-else:
-    adjusted_expenses = target_expenses
-    st.info("💼 You're calculating FIRE based only on your spending and savings. Real estate income excluded.")
-
-with st.expander("📈 Real Estate Appreciation (Optional)", expanded=False):
-    st.markdown("Estimate how much your property might grow in value by the time you reach FIRE.")
-
-    property_value = st.number_input(
-        "Current Property Value ($)",
-        min_value=0.0,
-        value=0.0,
-        step=1000.0,
-        help="Estimated current market value of your property (primary or rental)."
-    )
-
-    appreciation_rate = st.slider(
-        "Expected Annual Appreciation Rate (%)",
-        min_value=0.0,
-        max_value=10.0,
-        value=3.0,
-        step=0.1,
-        help="Estimated yearly increase in property value."
-    )
-
-    years_to_fi_estimate = st.number_input(
-        "Years Until FI (for projection)",
-        min_value=0,
-        value=10,
-        help="Rough estimate of how many years until you reach financial independence."
-    )
-
-    future_value = property_value * ((1 + appreciation_rate / 100) ** years_to_fi_estimate)
-    appreciation_gain = future_value - property_value
-
-    st.markdown(f"**Estimated Property Value at FI:** ${future_value:,.0f}")
-    st.caption(f"📈 That’s a projected gain of ${appreciation_gain:,.0f} over {years_to_fi_estimate} years.")
+adjusted_expenses = target_expenses
+st.info("🧮 FIRE projection is based on your target spending and savings. Real estate modeling is available in a separate tool.")
 
 
 # Calculation trigger
@@ -178,7 +101,7 @@ if st.button("Calculate My FIRE Path"):
 
     st.subheader("🎯 Results Summary")
 
-    st.markdown(f"💡 Your target expenses were adjusted by **${net_re_cashflow:,.0f}** in rental income.")
+    st.markdown(f"**Annual Expenses at FI (based on savings only):** ${adjusted_expenses:,.0f}")
     st.markdown(f"**Adjusted Annual Expenses at FI:** ${adjusted_expenses:,.0f}")
 
     st.markdown(f"""
@@ -226,6 +149,23 @@ if st.button("Calculate My FIRE Path"):
     name='Net Worth'
 ))
 
+    import datetime
+    this_year = datetime.datetime.now().year
+    fire_year = this_year + years_to_fi
+
+    # 📍 Add marker for Year 0 ("Today")
+    fig.add_vline(
+    x=0,
+    line_dash="dot",
+    line_color="#999999",
+    line_width=2,
+    annotation_text=f"📍 You are here ({this_year})",
+    annotation_position="top left",
+    annotation_font_size=12,
+    annotation_font_color="#555",
+    annotation_bgcolor="#f2f2f2"
+)
+
     # Add FIRE goal line
     fig.add_shape(
     type="line",
@@ -240,18 +180,48 @@ if st.button("Calculate My FIRE Path"):
     fig.add_annotation(
     x=years_to_fi,
     y=fire_goal,
-    text="🎯 FIRE Target",
+    text=f"🎯 FIRE Target ({fire_year})",
     showarrow=True,
     arrowhead=1,
     ax=0,
-    ay=-40
+    ay=-40,
+    font=dict(size=12),
+    bgcolor="#e6ffe6",
+    bordercolor="green",
+    borderwidth=1
 )
 
+    # Pre-FIRE zone
+    fig.add_vrect(
+    x0=0,
+    x1=years_to_fi,
+    fillcolor="rgba(255,165,0,0.05)",  # faint orange
+    layer="below",
+    line_width=0
+)
+
+# Optional: Add annotation
+    fig.add_annotation(
+    x=years_to_fi / 2,
+    y=max(net_worth_history)*0.95,
+    text="Pre-FIRE accumulation phase",
+    showarrow=False,
+    font=dict(size=11, color="#555"),
+    bgcolor="#fff8e5",
+    bordercolor="#ffcc66",
+    borderwidth=1
+)
+
+
     fig.update_layout(
-    xaxis_title="Years",
-    yaxis_title="Net Worth ($)",
+    title="Net Worth Projection Over Time",
+    xaxis_title="Years from Today",
+    yaxis_title="Projected Net Worth",
     template="plotly_white",
     showlegend=False
 )
 
     st.plotly_chart(fig, use_container_width=True)
+
+    # Optional prompt to explore more tools
+    st.markdown("🏡 Want to model rental income or property appreciation? Try the **Real Estate Planner** in the sidebar.")

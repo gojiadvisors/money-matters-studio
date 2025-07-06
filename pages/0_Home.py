@@ -1,7 +1,7 @@
 # pages/0_Home.py
 import streamlit as st
 
-st.set_page_config(page_title="🏠 Studio Home", page_icon="💰")
+st.set_page_config(page_title="Studio Home", page_icon="💰")
 
 # Logo and Hero Section
 st.image("logo.png", width=120)
@@ -25,22 +25,27 @@ with col1:
     st.page_link("pages/1_Core_Tracker.py", label="🔥 **FIRE Progress Tracker**")
     st.markdown("Estimate how close you are to FIRE and how long it might take, based on your current savings, expenses, and returns.")
 
-with col2:
     st.page_link("pages/2_Advanced_Planner.py", label="🧠 **Advanced FIRE Planner** *(Coming Soon)*")
     st.markdown("Layer in real estate, variable income, and equity unlock strategies to build a personalized FIRE plan.")
+    
+
+with col2:
+    st.page_link("pages/5_Real_Estate_Planner.py", label="🏘️ **Real Estate Planner**")
+    st.markdown("Model rental income, property appreciation, and equity unlock strategies to accelerate your path to FIRE.")
+
+    
+    st.page_link("pages/3_Withdrawal_Strategy.py", label="📤 **Withdrawal Strategy Designer** *(Coming Soon)*")
+    st.markdown("Design a tax-aware, sustainable drawdown strategy for post-FIRE living.")
 
 col3, col4 = st.columns(2)
 
 with col3:
-    st.page_link("pages/3_Withdrawal_Strategy.py", label="📤 **Withdrawal Strategy Designer** *(Coming Soon)*")
-    st.markdown("Design a tax-aware, sustainable drawdown strategy for post-FIRE living.")
-
-with col4:
+   
     st.page_link("pages/4_Lifestyle_Budgeter.py", label="🎒 **Lifestyle Budgeter** *(Planned)*")
     st.markdown("Model your FI lifestyle budget and optimize spending around your values.")
 
 st.markdown("---")
 
-# Optional: What's New or Feedback
-st.markdown("📌 **Coming Soon:** Real estate appreciation modeling, equity unlock tools, and scenario comparisons.")
-st.markdown("Have feedback or feature requests? [Click here to share your thoughts](https://forms.gle/your-form-link).")
+# Updated callout
+st.markdown("📌 **Coming Soon:** Equity unlock strategies, variable income modeling, and scenario comparisons in the Advanced Planner.")
+st.markdown("💬 Have feedback or ideas for new tools? [Click here to share your thoughts](https://forms.gle/your-form-link).")
