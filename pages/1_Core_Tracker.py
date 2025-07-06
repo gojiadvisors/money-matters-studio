@@ -1,7 +1,8 @@
 import plotly.graph_objects as go
-
 import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
+
+st.set_page_config(page_title="🔥 FIRE Progress Tracker", page_icon="🔥")
 
 st.image("logo.png", width=120)
 st.title("🔥 FIRE Progress Tracker")
@@ -87,14 +88,98 @@ expected_return_percent = st.slider(
 )
 annual_return = expected_return_percent / 100  # Convert to decimal
 
+#REAL ESTATE INVESTOR SECTION
+
+with st.expander("🏠 Real Estate Investor? Add rental income & expenses (optional)", expanded=False):
+    rental_income = st.number_input(
+        "Annual Rental Income ($)",
+        min_value=0.0,
+        value=0.0,
+        step=100.0,
+        help="Total rent you expect to receive from the property each year."
+    )
+
+    mortgage = st.number_input(
+        "Annual Mortgage Payments ($)",
+        min_value=0.0,
+        value=0.0,
+        step=100.0,
+        help="Total yearly mortgage payments (principal + interest)."
+    )
+
+    maintenance = st.number_input(
+        "Annual Maintenance & Repairs ($)",
+        min_value=0.0,
+        value=0.0,
+        step=100.0,
+        help="Estimated yearly cost of upkeep, repairs, and maintenance."
+    )
+
+    tax_insurance = st.number_input(
+        "Annual Property Tax & Insurance ($)",
+        min_value=0.0,
+        value=0.0,
+        step=100.0,
+        help="Combined yearly cost of property taxes and insurance."
+    )
+
+    net_re_cashflow = rental_income - mortgage - maintenance - tax_insurance
+    st.markdown(f"**Net Real Estate Cashflow:** ${net_re_cashflow:,.0f} / year")
+    include_real_estate = st.checkbox("Include net real estate cashflow in FIRE calculation?")
+
+# Adjust expenses based on inclusion toggle
+if include_real_estate:
+    adjusted_expenses = max(target_expenses - net_re_cashflow, 0)
+    st.info(f"🏠 You're factoring in ${net_re_cashflow:,.0f} in net rental income to reduce your annual expenses.")
+else:
+    adjusted_expenses = target_expenses
+    st.info("💼 You're calculating FIRE based only on your spending and savings. Real estate income excluded.")
+
+with st.expander("📈 Real Estate Appreciation (Optional)", expanded=False):
+    st.markdown("Estimate how much your property might grow in value by the time you reach FIRE.")
+
+    property_value = st.number_input(
+        "Current Property Value ($)",
+        min_value=0.0,
+        value=0.0,
+        step=1000.0,
+        help="Estimated current market value of your property (primary or rental)."
+    )
+
+    appreciation_rate = st.slider(
+        "Expected Annual Appreciation Rate (%)",
+        min_value=0.0,
+        max_value=10.0,
+        value=3.0,
+        step=0.1,
+        help="Estimated yearly increase in property value."
+    )
+
+    years_to_fi_estimate = st.number_input(
+        "Years Until FI (for projection)",
+        min_value=0,
+        value=10,
+        help="Rough estimate of how many years until you reach financial independence."
+    )
+
+    future_value = property_value * ((1 + appreciation_rate / 100) ** years_to_fi_estimate)
+    appreciation_gain = future_value - property_value
+
+    st.markdown(f"**Estimated Property Value at FI:** ${future_value:,.0f}")
+    st.caption(f"📈 That’s a projected gain of ${appreciation_gain:,.0f} over {years_to_fi_estimate} years.")
+
+
 # Calculation trigger
 if st.button("Calculate My FIRE Path"):
-    fire_goal = calculate_fire_number(target_expenses, withdrawal_rate)
+    fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
     years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(
         current_net_worth, annual_savings, annual_return, fire_goal
         )
 
     st.subheader("🎯 Results Summary")
+
+    st.markdown(f"💡 Your target expenses were adjusted by **${net_re_cashflow:,.0f}** in rental income.")
+    st.markdown(f"**Adjusted Annual Expenses at FI:** ${adjusted_expenses:,.0f}")
 
     st.markdown(f"""
     - **FIRE Goal:** ${fire_goal:,.0f}  
