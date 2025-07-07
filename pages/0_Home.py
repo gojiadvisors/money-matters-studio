@@ -4,48 +4,49 @@ import streamlit as st
 st.set_page_config(page_title="Studio Home", page_icon="💰")
 
 # Logo and Hero Section
-st.image("logo.png", width=120)
-st.title("Money Matters Studio")
-st.caption("Tools to master money now, so it doesn’t have to matter later.")
+col1, col2 = st.columns([5, 1])
+with col1:
+    st.title("💰 Money Matters Studio")
+    st.caption("Tools to master money now, so money doesn’t have to matter later.")
+with col2:
+    st.image("logo.png", width=100)
 
 st.markdown("---")
 
 # Welcome Message
-st.markdown("## 🎯 Your Personal Finance Toolkit")
-st.markdown(
-    "Explore interactive tools to help you gain insight, plan intentionally, and reach financial independence on your terms."
-)
+st.markdown("### 🧰 Your Financial Toolkit")
 
-# App Tiles
-st.markdown("## 🧭 Tools")
+st.markdown("""
+| Tool | What Is It? | Real Estate? | Integrated? |
+|------|---------------|---------------------|--------------------------|
+| [🔥 **FIRE Progress Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate your time to FIRE based on savings, expenses, and returns | ❌ | 🔜 Will integrate with Advanced Planner |
+| [🏘️ **Real Estate Planner**](phttps://money-matters-studio.streamlit.app/Real_Estate_Planner) | Model rental income, appreciation, and mortgage payoff over time | ✅ | ✅ Feeds into Advanced Planner |
+| 🧠 **Advanced FIRE Planner** | Combine real estate, side income, and equity events to customize your path | ✅ | ✅ Synthesizes all tools |
+| 📤 **Withdrawal Strategy Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | ❌ | 🔄 Uses FIRE Tracker results |
+| 🎒 **Lifestyle Budgeter** | Build your ideal FIRE lifestyle and optimize your spending | ❌ | 🔄 Helps define FIRE goal |
+""")
 
-col1, col2 = st.columns(2)
 
-with col1:
-    st.page_link("pages/1_Core_Tracker.py", label="🔥 **FIRE Progress Tracker**")
-    st.markdown("Estimate how close you are to FIRE and how long it might take, based on your current savings, expenses, and returns.")
+st.caption("📎 This table will grow as your toolkit evolves. Real estate support is modular by design - use only what fits your FIRE journey.")
+st.markdown("---")
+st.markdown("### 🚀 Not Sure Where to Start?")
+st.markdown("Start here:")
 
-    st.page_link("pages/2_Advanced_Planner.py", label="🧠 **Advanced FIRE Planner** *(Coming Soon)*")
-    st.markdown("Layer in real estate, variable income, and equity unlock strategies to build a personalized FIRE plan.")
-    
+st.page_link("pages/1_Core_Tracker.py", label="🔥 FIRE Progress Tracker")
+st.caption("Your baseline projection tool. Estimate how long it’ll take to reach FIRE based on liquid savings, income, and expenses.")
 
-with col2:
-    st.page_link("pages/5_Real_Estate_Planner.py", label="🏘️ **Real Estate Planner**")
-    st.markdown("Model rental income, property appreciation, and equity unlock strategies to accelerate your path to FIRE.")
+st.page_link("pages/5_Real_Estate_Planner.py", label="🏘️ Real Estate Planner")
+st.caption("See how a rental property could boost your wealth and speed up your timeline.")
 
-    
-    st.page_link("pages/3_Withdrawal_Strategy.py", label="📤 **Withdrawal Strategy Designer** *(Coming Soon)*")
-    st.markdown("Design a tax-aware, sustainable drawdown strategy for post-FIRE living.")
-
-col3, col4 = st.columns(2)
-
-with col3:
-   
-    st.page_link("pages/4_Lifestyle_Budgeter.py", label="🎒 **Lifestyle Budgeter** *(Planned)*")
-    st.markdown("Model your FI lifestyle budget and optimize spending around your values.")
+st.page_link("pages/2_Advanced_Planner.py", label="🧠 Advanced Planner (Coming Soon)")
+st.caption("Eventually, use all your data sources to create a master forecast.")
 
 st.markdown("---")
-
-# Updated callout
-st.markdown("📌 **Coming Soon:** Equity unlock strategies, variable income modeling, and scenario comparisons in the Advanced Planner.")
-st.markdown("💬 Have feedback or ideas for new tools? [Click here to share your thoughts](https://forms.gle/your-form-link).")
+st.markdown(
+    "<div style='text-align: left; font-size: 15px;'>"
+    "🔗 Visit the full studio site at "
+    "<a href='https://money-matters-studio.super.site/' target='_blank' style='text-decoration: none; color: #4B8BBE;'>Money Matters Studio</a> "
+    "for more tools, updates, resources, or contact us to give us suggestions and feedback."
+    "</div>",
+    unsafe_allow_html=True
+)
