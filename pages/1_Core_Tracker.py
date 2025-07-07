@@ -106,9 +106,6 @@ if st.button("Calculate My FIRE Path"):
 
     st.subheader("🎯 Results Summary")
 
-    st.markdown(f"**Annual Expenses at FI (based on savings only):** ${adjusted_expenses:,.0f}")
-    st.markdown(f"**Adjusted Annual Expenses at FI:** ${adjusted_expenses:,.0f}")
-
     st.markdown(f"""
     - **FIRE Goal:** ${fire_goal:,.0f}  
     - **Liquid Investable Assets:** ${liquid_assets:,.0f}  
