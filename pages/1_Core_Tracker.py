@@ -1,6 +1,8 @@
 import plotly.graph_objects as go
 import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
+from sidebar import render_global_assumptions
+render_global_assumptions()
 
 st.set_page_config(page_title="FIRE Progress Tracker", page_icon="🔥")
 
@@ -33,6 +35,11 @@ Customize your inputs below and explore how your financial future unfolds.
 
 st.header("📥 Input Your Info")
 
+fire_expenses = st.session_state["fire_expenses"]
+inflation_rate = st.session_state["inflation_rate"]
+withdrawal_rate = st.session_state["withdrawal_rate"]
+
+
 # Input fields
 liquid_assets = st.number_input(
     "💰 Liquid or Investable Assets ($)",
@@ -55,7 +62,7 @@ if include_illiquid:
     current_net_worth = liquid_assets + illiquid_assets
 else:
     current_net_worth = liquid_assets
-st.caption("🔁 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. But note: real estate cash flow and appreciation are handled in a separate module.")
+st.caption("🔍 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. But note: real estate cash flow and appreciation are handled in a separate module.")
 total_net_worth = liquid_assets + illiquid_assets
 # Annual Savings
 annual_savings = st.number_input(
@@ -64,24 +71,6 @@ annual_savings = st.number_input(
     step=100,
     help="Total amount you save each year towards FI, including retirement and brokerage contributions."
 )   
-# Target Annual Expenses at FI
-target_expenses = st.number_input(
-    "Target Annual Expenses at FI ($)",
-    value=50000,
-    step=100,
-    help="How much you expect to spend each year once you’ve reached financial independence. Think: housing, food, travel, healthcare... your lifestyle costs when you’re no longer working for income."
-)
-# Safe Withdrawal Rate (as a slider)
-swr_percent = st.slider(
-    "Safe Withdrawal Rate (%)",
-    min_value=2.0,
-    max_value=6.0,
-    value=4.0,
-    step=0.1,
-    help="The percentage of your portfolio you plan to withdraw each year in retirement without running out of money. A common rule of thumb is 4%, but many FIRE folks use 3–3.5% for extra safety."
-)
-withdrawal_rate = swr_percent / 100  # Convert to decimal for calculations
-
 # Expected Annual Return (as a slider)
 expected_return_percent = st.slider(
     "Expected Annual Return (%)",
@@ -93,8 +82,15 @@ expected_return_percent = st.slider(
 )
 annual_return = expected_return_percent / 100  # Convert to decimal
 
-adjusted_expenses = target_expenses
-st.info("🧮 FIRE projection is based on your target spending and savings. Real estate modeling is available in a separate tool.")
+adjusted_expenses = fire_expenses
+withdrawal_rate = withdrawal_rate / 100 # convert to decimal
+
+with st.expander("📋 View Global Assumptions (You can adjust these on the sidebar)", expanded=False):
+    st.markdown(f"""
+    - **🔥 FIRE Annual Spending:** `${fire_expenses:,.0f}`
+    - **📉 Inflation Rate:** `{inflation_rate:.1f}%`
+    - **📤 Withdrawal Rate:** `{withdrawal_rate:.1f}%`
+    """)
 
 
 # Calculation trigger
@@ -114,7 +110,6 @@ if st.button("Calculate My FIRE Path"):
     - **Estimated Years to FI (based on liquid assets):** {years_to_fi}  
     - **Projected Net Worth at FI:** ${final_net_worth:,.0f}
     """)
-
 
     st.subheader("🧭 Progress Toward FIRE")
 
