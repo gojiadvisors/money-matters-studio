@@ -5,7 +5,13 @@ import plotly.graph_objects as go
 import numpy_financial as npf
 from sidebar import render_global_assumptions
 render_global_assumptions()
+from ui_helpers import show_sidebar_hint
 
+# Init sidebar hint
+if "show_sidebar_hint" not in st.session_state:
+    st.session_state["show_sidebar_hint"] = True
+
+show_sidebar_hint()
 
 if "run_model" not in st.session_state:
     st.session_state["run_model"] = False

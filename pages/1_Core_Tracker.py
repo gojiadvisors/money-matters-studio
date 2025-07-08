@@ -3,6 +3,13 @@ import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
 from sidebar import render_global_assumptions
 render_global_assumptions()
+from ui_helpers import show_sidebar_hint
+
+if "show_sidebar_hint" not in st.session_state:
+    st.session_state["show_sidebar_hint"] = True
+
+show_sidebar_hint()
+
 
 st.set_page_config(page_title="FIRE Progress Tracker", page_icon="🔥")
 
