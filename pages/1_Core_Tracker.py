@@ -1,29 +1,18 @@
 import plotly.graph_objects as go
 import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
-from sidebar import render_global_assumptions
-render_global_assumptions()
-from ui_helpers import show_sidebar_hint
 
-if "show_sidebar_hint" not in st.session_state:
-    st.session_state["show_sidebar_hint"] = True
-
-show_sidebar_hint()
-
-
-st.set_page_config(page_title="FIRE Progress Tracker", page_icon="🔥")
+st.set_page_config(page_title="FIRE Tracker", page_icon="🔥")
 
 ##t.image("logo.png", width=120)
-st.title("🔥 FIRE Progress Tracker")
-st.caption("Built with purpose by Money Matters Studio — tools for financial clarity and freedom.")
+st.title("🔥 FIRE Tracker")
+st.caption("Find out how close you are to financial independence.")
 
 with st.expander("💡 What is FIRE and How Does This Tool Help?", expanded=False):
     st.markdown("""
-**FIRE** stands for **Financial Independence, Retire Early**, a movement focused on reclaiming time, freedom, and choice by building a nest egg large enough to support your lifestyle without needing to work for money.
-
-This tracker helps you answer one big question:
-
-""")
+    **FIRE** stands for **Financial Independence, Retire Early**, a movement focused on reclaiming time, freedom, and choice by building a nest egg large enough to support your lifestyle without needing to work for money.
+    This tracker helps you answer one big question:
+    """)
     st.markdown(
         "<blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“How close am I to financial independence, and how long will it take me to get there?”</blockquote>",
         unsafe_allow_html=True
@@ -42,9 +31,6 @@ Customize your inputs below and explore how your financial future unfolds.
 
 st.header("📥 Input Your Info")
 
-fire_expenses = st.session_state["fire_expenses"]
-inflation_rate = st.session_state["inflation_rate"]
-withdrawal_rate = st.session_state["withdrawal_rate"]
 
 
 # Input fields
@@ -78,27 +64,108 @@ annual_savings = st.number_input(
     step=100,
     help="Total amount you save each year towards FI, including retirement and brokerage contributions."
 )   
-# Expected Annual Return (as a slider)
-expected_return_percent = st.slider(
-    "Expected Annual Return (%)",
-    min_value=3.0,
-    max_value=10.0,
-    value=7.0,
-    step=0.1,
-    help="The average yearly growth rate you expect from your investments before retirement. This includes stock market returns, dividends, and interest—minus any fees or taxes."
+# Expected Annual Return Scenario Picker
+return_option = st.selectbox(
+    "📈 Expected Annual Return Scenario",
+    options=["Custom", "Conservative (5.0%)", "Balanced (7.0%)", "Aggressive (9.0%)"],
+    index=1,
+    help=(
+        "This is the projected average yearly growth rate of your investments before retirement. "
+        "It reflects a mix of market returns, dividends, and compound growth, minus fees and taxes. "
+        "Pick a scenario that aligns with your portfolio strategy or enter a custom rate."
+    )
 )
+
+if return_option == "Custom":
+    expected_return_percent = st.slider(
+        "Custom Expected Annual Return (%)",
+        min_value=3.0,
+        max_value=10.0,
+        value=st.session_state.get("expected_return_percent", 7.0),
+        step=0.1,
+        help=(
+            "Manually enter your expected annual portfolio growth rate. "
+            "Consider historical market returns, diversification, fees, and taxes. "
+            "This rate directly impacts how fast your net worth grows toward your FIRE goal."
+        )
+    )
+else:
+    expected_return_percent = float(return_option.split("(")[-1].replace("%)", ""))
+st.session_state["expected_return_percent"] = expected_return_percent
+
 annual_return = expected_return_percent / 100  # Convert to decimal
 
+with st.expander("🔧 Customize Your Assumptions", expanded=True):
+    fire_expenses = st.number_input(
+        "🔥 Annual FIRE Spending Target ($)",
+        min_value=0,
+        value=st.session_state.get("fire_expenses", 40000),
+        step=1000,
+        help="How much you expect to spend annually once financially independent."
+    )
+    st.session_state["fire_expenses"] = fire_expenses
+
+    # Inflation Scenario Picker
+    inflation_option = st.selectbox(
+        "📉 Inflation Scenario",
+        options=["Custom", "Low (1.5%)", "Average (2.5%)", "High (4.0%)"],
+        index=2,
+        help=(
+            "Inflation is the average rate at which prices increase over time. "
+            "It affects how much future dollars will actually buy, which impacts your FIRE target. "
+            "Choose a historical scenario or define a custom estimate based on your outlook."
+        )
+    )
+
+    if inflation_option == "Custom":
+        inflation_rate = st.slider(
+            "Custom Inflation Rate (%)",
+            min_value=0.0,
+            max_value=10.0,
+            value=st.session_state.get("inflation_rate", 2.5),
+            step=0.1,
+            help=(
+                "Set your own estimate for the average yearly rise in prices—how much more expensive things will get annually. "
+                "Common long-term averages range between 2.0% and 3.0%. High inflation means your money must stretch further."
+            )
+        )
+    else:
+        inflation_rate = float(inflation_option.split("(")[-1].replace("%)", ""))
+    st.session_state["inflation_rate"] = inflation_rate
+
+    # Withdrawal Rate Scenario Picker
+    withdrawal_option = st.selectbox(
+        "📤 Withdrawal Scenario",
+        options=["Custom", "Conservative (3.0%)", "Moderate (3.5%)", "Aggressive (4.0%)"],
+        index=1,
+        help=(
+            "This is the safe percentage of your portfolio you plan to withdraw each year in retirement. "
+            "Lower rates are more conservative and aim to protect against running out of money; higher rates assume shorter retirements or higher risk tolerance. "
+            "This rate defines how big your FIRE nest egg needs to be."
+        )
+    )
+
+    if withdrawal_option == "Custom":
+        withdrawal_rate = st.slider(
+            "Custom Withdrawal Rate (%)",
+            min_value=0.0,
+            max_value=10.0,
+            value=st.session_state.get("withdrawal_rate", 3.5),
+            step=0.1,
+            help=(
+                "Manually set your expected annual withdrawal rate from your retirement portfolio. "
+                "Commonly suggested rates range from 3.0% to 4.0%. Lower rates offer safety and longevity—higher rates assume faster drawdown or aggressive planning."
+            )
+        )
+    else:
+        withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
+    st.session_state["withdrawal_rate"] = withdrawal_rate
+
 adjusted_expenses = fire_expenses
+
+# Already assigned above during input block
+inflation_rate = inflation_rate / 100 # convert to decimal
 withdrawal_rate = withdrawal_rate / 100 # convert to decimal
-
-with st.expander("📋 View Global Assumptions (You can adjust these on the sidebar)", expanded=False):
-    st.markdown(f"""
-    - **🔥 FIRE Annual Spending:** `${fire_expenses:,.0f}`
-    - **📉 Inflation Rate:** `{inflation_rate:.1f}%`
-    - **📤 Withdrawal Rate:** `{withdrawal_rate:.1f}%`
-    """)
-
 
 # Calculation trigger
 if st.button("Calculate My FIRE Path"):

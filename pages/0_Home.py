@@ -17,13 +17,13 @@ st.markdown("---")
 st.markdown("### 🧰 Your Financial Toolkit")
 
 st.markdown("""
-| Tool | What Is It? | Real Estate? | Integrated? |
-|------|---------------|---------------------|--------------------------|
-| [🔥 **FIRE Progress Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate your time to FIRE based on savings, expenses, and returns | ❌ | 🔜 Will integrate with Advanced Planner |
-| [🏘️ **Real Estate Planner**](phttps://money-matters-studio.streamlit.app/Real_Estate_Planner) | Model rental income, appreciation, and mortgage payoff over time | ✅ | ✅ Feeds into Advanced Planner |
-| 🧠 **Advanced FIRE Planner** | Combine real estate, side income, and equity events to customize your path | ✅ | ✅ Synthesizes all tools |
-| 📤 **Withdrawal Strategy Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | ❌ | 🔄 Uses FIRE Tracker results |
-| 🎒 **Lifestyle Budgeter** | Build your ideal FIRE lifestyle and optimize your spending | ❌ | 🔄 Helps define FIRE goal |
+| Tool | What Is It? | Integrated? |
+|------|---------------|--------------------------|
+| [🔥 **FIRE Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate your time to FIRE based on savings, expenses, and returns | 🔜 Will integrate with Advanced Planner |
+| [🏘️ **Real Estate Planner**](phttps://money-matters-studio.streamlit.app/Real_Estate_Planner) | Model rental income, appreciation, and mortgage payoff over time | ✅ Feeds into Advanced Planner |
+| 🧠 **Advanced FIRE Planner** | Combine real estate, side income, and equity events to customize your path | ✅ Synthesizes all tools |
+| 📤 **Withdrawal Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | 🔄 Uses FIRE Tracker results |
+| 🎒 **Lifestyle Budgeter** | Build your ideal FIRE lifestyle and optimize your spending | 🔄 Helps define FIRE goal |
 """)
 
 
@@ -32,7 +32,7 @@ st.markdown("---")
 st.markdown("### 🚀 Not Sure Where to Start?")
 st.markdown("Start here:")
 
-st.page_link("pages/1_Core_Tracker.py", label="🔥 FIRE Progress Tracker")
+st.page_link("pages/1_Core_Tracker.py", label="🔥 FIRE Tracker")
 st.caption("Your baseline projection tool. Estimate how long it’ll take to reach FIRE based on liquid savings, income, and expenses.")
 
 st.page_link("pages/5_Real_Estate_Planner.py", label="🏘️ Real Estate Planner")
@@ -46,7 +46,7 @@ st.markdown(
     "<div style='text-align: left; font-size: 15px;'>"
     "🔗 Visit the full studio site at "
     "<a href='https://money-matters-studio.super.site/' target='_blank' style='text-decoration: none; color: #4B8BBE;'>Money Matters Studio</a> "
-    "for more tools, updates, resources, or contact us to give us suggestions and feedback."
+    "for more tools, updates, resources, or give us feedback."
     "</div>",
     unsafe_allow_html=True
 )

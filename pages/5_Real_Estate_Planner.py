@@ -3,15 +3,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import numpy_financial as npf
-from sidebar import render_global_assumptions
-render_global_assumptions()
-from ui_helpers import show_sidebar_hint
-
-# Init sidebar hint
-if "show_sidebar_hint" not in st.session_state:
-    st.session_state["show_sidebar_hint"] = True
-
-show_sidebar_hint()
 
 if "run_model" not in st.session_state:
     st.session_state["run_model"] = False
@@ -19,6 +10,12 @@ if "run_model" not in st.session_state:
 
 # --- Page Setup ---
 st.set_page_config(page_title="Real Estate Planner", page_icon="🏡")
+
+# --- Initialize session keys if missing ---
+st.session_state.setdefault("fire_expenses", 40000)
+st.session_state.setdefault("inflation_rate", 2.5)
+st.session_state.setdefault("withdrawal_rate", 3.5)
+
 
 st.title("🏘️ Real Estate Planner")
 st.caption("Model rental income, equity growth, and appreciation strategies to support your FIRE plan.")
@@ -129,12 +126,70 @@ years_held = st.slider(
 )
 model_years = [purchase_year + i for i in range(years_held)]
 
-with st.expander("📋 View Global Assumptions (You can adjust these on the sidebar)", expanded=False):
-    st.markdown(f"""
-    - **🔥 FIRE Annual Spending:** `${fire_expenses:,.0f}`
-    - **📉 Inflation Rate:** `{inflation_rate:.1f}%`
-    - **📤 Withdrawal Rate:** `{withdrawal_rate:.1f}%`
-    """)
+with st.expander("🔧 Customize Your Assumptions", expanded=True):
+
+    # FIRE Spending Target
+    fire_expenses = st.number_input(
+        "🔥 Annual FIRE Spending Target ($)",
+        min_value=0,
+        value=st.session_state.get("fire_expenses", 40000),
+        step=1000,
+        help="How much you expect to spend annually once financially independent."
+    )
+    st.session_state["fire_expenses"] = fire_expenses
+
+    # Inflation Presets
+    inflation_option = st.selectbox(
+        "📉 Inflation Scenario",
+        options=["Custom", "Low (1.5%)", "Average (2.5%)", "High (4.0%)"],
+        index=2,
+        help=(
+            "Your expected long-term average increase in prices. "
+            "This affects future expenses and the purchasing power of your portfolio."
+        )
+    )
+
+    if inflation_option == "Custom":
+        inflation_rate = st.slider(
+            "Custom Inflation Rate (%)",
+            min_value=0.0,
+            max_value=10.0,
+            value=st.session_state.get("inflation_rate", 2.5),
+            step=0.1,
+            help=(
+                "Set your own inflation estimate. Higher values reduce your future purchasing power and raise your FIRE target."
+            )
+        )
+    else:
+        inflation_rate = float(inflation_option.split("(")[-1].replace("%)", ""))
+    st.session_state["inflation_rate"] = inflation_rate
+
+    # Withdrawal Presets
+    withdrawal_option = st.selectbox(
+        "📤 Withdrawal Scenario",
+        options=["Custom", "Conservative (3.0%)", "Moderate (3.5%)", "Aggressive (4.0%)"],
+        index=1,
+        help=(
+            "The percentage of your FIRE portfolio you plan to withdraw annually. "
+            "Lower values offer more safety; higher ones assume shorter time horizons or aggressive planning."
+        )
+    )
+
+    if withdrawal_option == "Custom":
+        withdrawal_rate = st.slider(
+            "Custom Withdrawal Rate (%)",
+            min_value=0.0,
+            max_value=10.0,
+            value=st.session_state.get("withdrawal_rate", 3.5),
+            step=0.1,
+            help=(
+                "Set your own expected withdrawal rate, used to calculate the size of your required portfolio."
+            )
+        )
+    else:
+        withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
+    st.session_state["withdrawal_rate"] = withdrawal_rate
+
 
 
 # --- Core Calculators ---
@@ -184,8 +239,6 @@ def project_property_equity(purchase_price, appreciation_rate, loan_amount, annu
     return pd.DataFrame(equity_records)
 
 fire_expenses = st.session_state["fire_expenses"]
-
-
 
 # --- Results Section ---
 if st.button("Run Property Model"):
