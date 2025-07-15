@@ -1,14 +1,6 @@
 import streamlit as st
 from navigation import studio_nav
-from sidebar import render_global_assumptions
-render_global_assumptions()
-from ui_helpers import show_sidebar_hint
 
-# Init sidebar hint
-if "show_sidebar_hint" not in st.session_state:
-    st.session_state["show_sidebar_hint"] = True
-
-show_sidebar_hint()
 
 st.set_page_config(page_title="Advanced Planner", page_icon="🧠")
 
