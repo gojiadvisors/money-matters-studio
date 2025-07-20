@@ -31,8 +31,6 @@ Customize your inputs below and explore how your financial future unfolds.
 
 st.header("📥 Input Your Info")
 
-
-
 # Input fields
 liquid_assets = st.number_input(
     "💰 Liquid or Investable Assets ($)",
@@ -63,10 +61,45 @@ annual_savings = st.number_input(
     value=30000,
     step=100,
     help="Total amount you save each year towards FI, including retirement and brokerage contributions."
-)   
+) 
+savings_growth_scenario = st.selectbox(
+    "Annual Savings Growth Scenario",
+    options=[
+        "Custom",
+        "Flat (0.0%)",
+        "Conservative (1.0%)",
+        "Typical Merit Increase (2.0%)",
+        "Strong Career Growth (3.5%)",
+        "Temporary Setback (-1.0%)"
+    ],
+    index=1,
+    help="Choose how your annual savings might evolve based on career trajectory, lifestyle changes, or personal planning."
+)
+
+if savings_growth_scenario == "Custom":
+    merit_increase_rate = st.slider(
+        "Annual Savings Growth Rate (%)",
+        min_value=-5.0,
+        max_value=10.0,
+        value=0.0,
+        step=0.1,
+        help="Assumes your annual savings will increase (or decrease) each year due to merit raises, setbacks, or lifestyle adjustments."
+    )
+else:
+    savings_growth_map = {
+        "Flat (0.0%)": 0.0,
+        "Conservative (1.0%)": 1.0,
+        "Typical Merit Increase (2.0%)": 2.0,
+        "Strong Career Growth (3.5%)": 3.5,
+        "Temporary Setback (-1.0%)": -1.0
+    }
+    merit_increase_rate = savings_growth_map[savings_growth_scenario]
+
+merit_growth = merit_increase_rate / 100  # Convert to decimal format
+
 # Expected Annual Return Scenario Picker
 return_option = st.selectbox(
-    "📈 Expected Annual Return Scenario",
+    "📊 Annual Return on Investment Scenario",
     options=["Custom", "Conservative (5.0%)", "Balanced (7.0%)", "Aggressive (9.0%)"],
     index=1,
     help=(
@@ -99,7 +132,7 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
     fire_expenses = st.number_input(
         "🔥 Annual FIRE Spending Target ($)",
         min_value=0,
-        value=st.session_state.get("fire_expenses", 40000),
+        value=st.session_state.get("fire_expenses", 80000),
         step=1000,
         help="How much you expect to spend annually once financially independent."
     )
@@ -161,7 +194,12 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
         withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
     st.session_state["withdrawal_rate"] = withdrawal_rate
 
-adjusted_expenses = fire_expenses
+    adjust_fire_expenses_for_inflation = st.checkbox(
+    "📈 Adjust FIRE Spending for Inflation",
+    value=True,
+    help="If checked, your annual FIRE spending target will grow each year with inflation."
+)
+
 
 # Already assigned above during input block
 inflation_rate = inflation_rate / 100 # convert to decimal
@@ -169,21 +207,46 @@ withdrawal_rate = withdrawal_rate / 100 # convert to decimal
 
 # Calculation trigger
 if st.button("Calculate My FIRE Path"):
+
+    # ✅ Step 1: Temporarily estimate FIRE Goal using flat expenses
+    fire_goal_temp = calculate_fire_number(fire_expenses, withdrawal_rate)
+
+    # ✅ Step 2: Estimate years to FI with flat FIRE goal
+    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(
+        current_net_worth, annual_savings, annual_return, fire_goal_temp
+    )
+
+    # ✅ Step 3: Recalculate FIRE expense for retirement year based on inflation
+    if adjust_fire_expenses_for_inflation:
+        adjusted_expenses = fire_expenses * ((1 + inflation_rate) ** years_to_fi)
+    else:
+        adjusted_expenses = fire_expenses
+
+    # ✅ Step 4: Now calculate your final FIRE goal using adjusted expenses
+    fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
+
+
     fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
     years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(
         current_net_worth, annual_savings, annual_return, fire_goal
         )
+    import datetime
+    this_year = datetime.datetime.now().year
+    fire_year = this_year + years_to_fi
+
 
     st.subheader("🎯 Results Summary")
 
     st.markdown(f"""
     - **FIRE Goal:** ${fire_goal:,.0f}  
+    - **Target FIRE Spending in Year {fire_year}:** ${adjusted_expenses:,.0f} {"(inflation-adjusted)" if adjust_fire_expenses_for_inflation else "(flat spending)"}  
     - **Liquid Investable Assets:** ${liquid_assets:,.0f}  
     - **Illiquid Assets (e.g. home equity):** ${illiquid_assets:,.0f}  
     - **Total Net Worth:** ${total_net_worth:,.0f}  
     - **Estimated Years to FI (based on liquid assets):** {years_to_fi}  
     - **Projected Net Worth at FI:** ${final_net_worth:,.0f}
     """)
+
 
     st.subheader("🧭 Progress Toward FIRE")
 
@@ -206,8 +269,6 @@ if st.button("Calculate My FIRE Path"):
         st.info(f"You’re {progress_pct * 100:.1f}% of the way in. You’ve started something powerful—stay the course and your {years_to_fi}-year plan will pay off.")
     else:
         st.info(f"Every FIRE journey starts with that first spark. You’re {progress_pct * 100:.1f}% there. With your current pace, independence is on the horizon in about {years_to_fi} years.")
-
-
 
     st.subheader("📈 Net Worth Projection")
 
