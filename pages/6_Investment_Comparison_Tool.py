@@ -242,13 +242,13 @@ with tab2:
     st.subheader("📈 Equity Market Scenario")
 
     if use_synced_investment:
-        index_investment = initial_investment  # synced from real estate tab
+        index_investment = float(initial_investment)  # synced from real estate tab
         st.text(f"💵 Index Fund Investment: ${index_investment:,.0f} (synced from real estate scenario)")
     else:
         index_investment = st.number_input(
             "💵 Initial Amount Invested in Index Fund ($)",
             min_value=1000,
-            value=initial_investment,  # prefill for continuity
+            value=float(initial_investment),  # prefill for continuity
             step=1000,
             help="Starting capital allocated to the equity market strategy."
         )
