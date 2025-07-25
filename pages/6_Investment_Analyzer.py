@@ -22,9 +22,9 @@ initialize_state({
 })
 
 # --- Page Setup ---
-st.set_page_config(page_title="Investment Comparison Tool", page_icon="📊")
+st.set_page_config(page_title="Investment Analyzer", page_icon="📊")
 
-st.title("📊 Investment Comparison Tool")
+st.title("📊 Investment Analyzer")
 st.caption("Compare strategic investment paths (🏘️ real estate and 📈 index funds) to see which accelerates your FIRE timeline more efficiently.")
 
 with st.expander("💡 Which Investment Accelerates FIRE Faster?", expanded=False):
@@ -242,14 +242,14 @@ with tab2:
     st.subheader("📈 Equity Market Scenario")
 
     if use_synced_investment:
-        index_investment = float(initial_investment)  # synced from real estate tab
+        index_investment = initial_investment  # synced from real estate tab
         st.text(f"💵 Index Fund Investment: ${index_investment:,.0f} (synced from real estate scenario)")
     else:
         index_investment = st.number_input(
             "💵 Initial Amount Invested in Index Fund ($)",
-            min_value=1000,
+            min_value=1000.0,
             value=float(initial_investment),  # prefill for continuity
-            step=1000,
+            step=1000.0,
             help="Starting capital allocated to the equity market strategy."
         )
 
@@ -322,6 +322,14 @@ adjust_for_inflation = st.checkbox(
     value=True,
     help="Enable to express all results in today's purchasing power."
 )
+with st.expander("❓ What's the difference between nominal and inflation-adjusted values?"):
+    st.markdown("""
+    <ul>
+        <li><strong>Nominal values:</strong> show raw dollars at each point in time—no adjustment for inflation</li>
+        <li><strong>Inflation-adjusted values:</strong> show today's equivalent dollars, revealing the <em>real</em> purchasing power over time</li>
+        <li><strong>Example:</strong> A property worth $500,000 in 20 years might only feel like $300,000 today if inflation averages 2.5% annually.</li>
+    </ul>
+    """, unsafe_allow_html=True)
 
 # --- 🚀 Simulation Logic Functions ---
 
@@ -454,176 +462,177 @@ def project_cashflow(annual_rent, annual_expenses, rental_growth_rate, annual_de
         cashflow_records.append(cashflow)
     return cashflow_records
 
-# --- Run Simulations ---
+# Add run trigger
+if st.button("▶️ Run Investment Analyzer"):
 
-re_contribution, re_history, re_cashflow = simulate_real_estate_fire_contribution(
-    property_value,
-    down_payment_pct,
-    mortgage_rate if down_payment_pct != 100 else 0,
-    mortgage_years if down_payment_pct != 100 else 1,
-    annual_rent,   # ✅ new input
-    annual_expenses,  # ✅ new input
-    rental_growth_rate,
-    appreciation_rate,
-    investment_years,
-    inflation_rate,
-    #2.5,  # inflation_rate (you can expose this too)
-    adjust_for_inflation
-)
-equity_df = pd.DataFrame(re_history)  # re_history = equity_records
+    # --- Run Simulations ---
 
-
-eq_contribution, eq_history = simulate_equity(
-    index_investment,
-    investment_years,
-    annual_return,
-    dividend_yield,
-    reinvest_dividends,
-    inflation_rate,
-    adjust_for_inflation
-)
-
-fire_yearly = []
-re_cash_cumulative = 0
-
-num_years = min(investment_years, len(re_history), len(re_cashflow), len(eq_history))
-for i in range(num_years):
-    year = re_history[i]["year"]
-
-    # Real Estate
-    re_equity = re_history[i]["equity"]
-    re_cash = re_cashflow[i]
-    re_cash_cumulative += re_cash
-    re_cumulative = re_equity + re_cash_cumulative
-    re_annual = (re_history[i]["equity"] - re_history[i-1]["equity"] if i > 0 else re_equity) + re_cash
-
-    # Index Fund
-    eq_current = eq_history[i]["portfolio_value"]
-    eq_previous = eq_history[i-1]["portfolio_value"] if i > 0 else 0
-    eq_annual = eq_current - eq_previous
-    eq_cumulative = eq_current
-
-    fire_yearly.append({
-        "Year": year,
-        "Real Estate (Annual)": re_annual,
-        "Real Estate (Cumulative)": re_cumulative,
-        "Index Fund (Annual)": eq_annual,
-        "Index Fund (Cumulative)": eq_cumulative
-    })
-
-fire_df = pd.DataFrame(fire_yearly)
+    re_contribution, re_history, re_cashflow = simulate_real_estate_fire_contribution(
+        property_value,
+        down_payment_pct,
+        mortgage_rate if down_payment_pct != 100 else 0,
+        mortgage_years if down_payment_pct != 100 else 1,
+        annual_rent,   # ✅ new input
+        annual_expenses,  # ✅ new input
+        rental_growth_rate,
+        appreciation_rate,
+        investment_years,
+        inflation_rate,
+        #2.5,  # inflation_rate (you can expose this too)
+        adjust_for_inflation
+    )
+    equity_df = pd.DataFrame(re_history)  # re_history = equity_records
 
 
+    eq_contribution, eq_history = simulate_equity(
+        index_investment,
+        investment_years,
+        annual_return,
+        dividend_yield,
+        reinvest_dividends,
+        inflation_rate,
+        adjust_for_inflation
+    )
 
-# Display Results side by side
+    fire_yearly = []
+    re_cash_cumulative = 0
 
-st.subheader("📊 Investment Comparison Summary")
+    num_years = min(investment_years, len(re_history), len(re_cashflow), len(eq_history))
+    for i in range(num_years):
+        year = re_history[i]["year"]
 
-col1, col2 = st.columns(2)
+        # Real Estate
+        re_equity = re_history[i]["equity"]
+        re_cash = re_cashflow[i]
+        re_cash_cumulative += re_cash
+        re_cumulative = re_equity + re_cash_cumulative
+        re_annual = (re_history[i]["equity"] - re_history[i-1]["equity"] if i > 0 else re_equity) + re_cash
 
-with col1:
-    st.metric("🏘️ Real Estate FIRE Contribution", f"${re_contribution:,.0f}")
-with col2:
-    st.metric("📈 Index Fund FIRE Contribution", f"${eq_contribution:,.0f}")
+        # Index Fund
+        eq_current = eq_history[i]["portfolio_value"]
+        eq_previous = eq_history[i-1]["portfolio_value"] if i > 0 else 0
+        eq_annual = eq_current - eq_previous
+        eq_cumulative = eq_current
 
-# YoY Table
+        fire_yearly.append({
+            "Year": year,
+            "Real Estate (Annual)": re_annual,
+            "Real Estate (Cumulative)": re_cumulative,
+            "Index Fund (Annual)": eq_annual,
+            "Index Fund (Cumulative)": eq_cumulative
+        })
 
-st.subheader("📊 Year-by-Year FIRE Contributions")
+    fire_df = pd.DataFrame(fire_yearly)
 
-def highlight_winner(row):
-    re_value = row["Real Estate (Cumulative)"]
-    eq_value = row["Index Fund (Cumulative)"]
+    # Display Results side by side
 
-    styles = [""] * len(row)
-    if eq_value > re_value:
-        styles[row.index.get_loc("Index Fund (Cumulative)")] = "background-color: lightgreen"
-    elif re_value > eq_value:
-        styles[row.index.get_loc("Real Estate (Cumulative)")] = "background-color: lightyellow"
-    return styles
+    st.subheader("📊 Investment Comparison Summary")
 
-styled_df = fire_df.style \
-    .format({
-        "Real Estate (Annual)": "${:,.0f}",
-        "Real Estate (Cumulative)": "${:,.0f}",
-        "Index Fund (Annual)": "${:,.0f}",
-        "Index Fund (Cumulative)": "${:,.0f}"
-    }) \
-    .apply(highlight_winner, axis=1)
-    
-st.dataframe(styled_df)
+    col1, col2 = st.columns(2)
 
-# --- 🔍 Strategic Insight Summary ---
+    with col1:
+        st.metric("🏘️ Real Estate FIRE Contribution", f"${re_contribution:,.0f}")
+    with col2:
+        st.metric("📈 Index Fund FIRE Contribution", f"${eq_contribution:,.0f}")
 
-# Analyze which strategy leads each year
-real_estate_wins = []
-index_fund_wins = []
+    # YoY Table
 
-for row in fire_yearly:
-    year = row["Year"]
-    re_cum = row["Real Estate (Cumulative)"]
-    eq_cum = row["Index Fund (Cumulative)"]
+    st.subheader("📊 Year-by-Year FIRE Contributions")
 
-    if re_cum > eq_cum:
-        real_estate_wins.append(year)
-    elif eq_cum > re_cum:
-        index_fund_wins.append(year)
+    def highlight_winner(row):
+        re_value = row["Real Estate (Cumulative)"]
+        eq_value = row["Index Fund (Cumulative)"]
 
-# Final winner
-if fire_yearly[-1]["Real Estate (Cumulative)"] > fire_yearly[-1]["Index Fund (Cumulative)"]:
-    final_winner = "🏘️ Real estate"
-else:
-    final_winner = "📈 Index fund"
+        styles = [""] * len(row)
+        if eq_value > re_value:
+            styles[row.index.get_loc("Index Fund (Cumulative)")] = "background-color: lightgreen"
+        elif re_value > eq_value:
+            styles[row.index.get_loc("Real Estate (Cumulative)")] = "background-color: lightyellow"
+        return styles
 
-# Summary message
-st.markdown(f"""
-### 🔍 Strategic Insight
+    styled_df = fire_df.style \
+        .format({
+            "Real Estate (Annual)": "${:,.0f}",
+            "Real Estate (Cumulative)": "${:,.0f}",
+            "Index Fund (Annual)": "${:,.0f}",
+            "Index Fund (Cumulative)": "${:,.0f}"
+        }) \
+        .apply(highlight_winner, axis=1)
+        
+    st.dataframe(styled_df)
 
-Based on your inputs:
+    # --- 🔍 Strategic Insight Summary ---
 
-- Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
-- Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+    # Analyze which strategy leads each year
+    real_estate_wins = []
+    index_fund_wins = []
 
-In the year-by-year comparison table:
-- 🟨 **Real estate outpaces index fund** in {len(real_estate_wins)} of {investment_years} years.
-- 🟩 **Index fund leads** in {len(index_fund_wins)} years.
+    for row in fire_yearly:
+        year = row["Year"]
+        re_cum = row["Real Estate (Cumulative)"]
+        eq_cum = row["Index Fund (Cumulative)"]
 
-Final outcome: **{final_winner}** is the stronger FIRE contributor over the full investment horizon.
+        if re_cum > eq_cum:
+            real_estate_wins.append(year)
+        elif eq_cum > re_cum:
+            index_fund_wins.append(year)
 
-The table highlights:
-- 🟨 Years where real estate is ahead
-- 🟩 Years where index fund is ahead
-""")
+    # Final winner
+    if fire_yearly[-1]["Real Estate (Cumulative)"] > fire_yearly[-1]["Index Fund (Cumulative)"]:
+        final_winner = "🏘️ Real estate"
+    else:
+        final_winner = "📈 Index fund"
+
+    # Summary message
+    st.markdown(f"""
+    ### 🔍 Strategic Insight
+
+    Based on your inputs:
+
+    - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
+    - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+
+    In the year-by-year comparison table:
+    - 🟨 **Real estate outpaces index fund** in {len(real_estate_wins)} of {investment_years} years.
+    - 🟩 **Index fund leads** in {len(index_fund_wins)} years.
+
+    Final outcome: **{final_winner}** is the stronger FIRE contributor over the full investment horizon.
+
+    The table highlights:
+    - 🟨 Years where real estate is ahead
+    - 🟩 Years where index fund is ahead
+    """)
 
 
-# # Breakeven logic
+    # # Breakeven logic
 
-# break_even_year = None
-# for i in range(investment_years):
-#     re_total = re_history[i]["equity"] + re_cashflow[i]
-#     eq_total = eq_history[i]["portfolio_value"]
+    # break_even_year = None
+    # for i in range(investment_years):
+    #     re_total = re_history[i]["equity"] + re_cashflow[i]
+    #     eq_total = eq_history[i]["portfolio_value"]
 
-#     epsilon = 100  # buffer to prevent flip due to minor fluctuations
-#     if eq_total > re_total + epsilon:
-#         break_even_year = eq_history[i]["year"]
-#         break
+    #     epsilon = 100  # buffer to prevent flip due to minor fluctuations
+    #     if eq_total > re_total + epsilon:
+    #         break_even_year = eq_history[i]["year"]
+    #         break
 
 
-# # Display breakeven results
+    # # Display breakeven results
 
-# if break_even_year:
-#     st.success(f"📅 Break-Even Year: Your equity market investment is projected to surpass real estate in Year {break_even_year}.")
-# else:
-#     st.info("🏠 Over this time horizon, real estate remains the stronger FIRE contributor.")
+    # if break_even_year:
+    #     st.success(f"📅 Break-Even Year: Your equity market investment is projected to surpass real estate in Year {break_even_year}.")
+    # else:
+    #     st.info("🏠 Over this time horizon, real estate remains the stronger FIRE contributor.")
 
-# # Final output summary
+    # # Final output summary
 
-# st.markdown(f"""
-# ### 🔍 Strategic Insight
+    # st.markdown(f"""
+    # ### 🔍 Strategic Insight
 
-# Based on your inputs:
+    # Based on your inputs:
 
-# - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
-# - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+    # - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
+    # - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
 
-# {"The break-even point occurs in Year " + str(break_even_year) + ", when the index fund overtakes the property in total contribution." if break_even_year else "Real estate remains dominant over the full investment horizon."}
-# """)
+    # {"The break-even point occurs in Year " + str(break_even_year) + ", when the index fund overtakes the property in total contribution." if break_even_year else "Real estate remains dominant over the full investment horizon."}
+    # """)

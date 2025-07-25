@@ -450,7 +450,7 @@ if st.session_state["run_model"]:
     else:
         st.info("🧾 This property breaks even in Year 1—neutral impact on your FIRE runway.")
 
-    if st.button("📤 Send These Results to Investment Comparison Tool"):
+    if st.button("📤 Send These Results to Investment Analyzer"):
         st.session_state["re_sync"] = True
         st.session_state["purchase_year"] = purchase_year
         st.session_state["property_value"] = purchase_price
@@ -462,7 +462,7 @@ if st.session_state["run_model"]:
         st.session_state["rental_growth_rate"] = rental_growth_rate
         st.session_state["annual_expenses"] = annual_expenses
         st.session_state["years_held"] = years_held
-        st.success("✅ Inputs synced to Investment Comparison Tool.")
+        st.success("✅ Inputs synced to Investment Analyzer.")
 
     st.markdown("### 📈 Equity Growth Over Time")
 
