@@ -3,9 +3,29 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import numpy_financial as npf
+import datetime
+this_year = datetime.datetime.now().year
+
 
 if "run_model" not in st.session_state:
     st.session_state["run_model"] = False
+
+from utils_session import initialize_state
+
+initialize_state({
+    "purchase_year": this_year,
+    "purchase_price": 400000,
+    "down_payment_pct": 25.0,
+    "loan_term": 30,
+    "interest_rate": 3.0,
+    "rental_growth_rate": 1.5,
+    "appreciation_rate": 3.0,
+    "mortgage_years": 30,
+    "annual_rent": 24000,
+    "annual_expenses": 5000,
+    "years_held": 15
+    # Add other synced fields here
+})
 
 
 # --- Page Setup ---
@@ -155,7 +175,7 @@ appreciation_rate = st.number_input(
 years_held = st.slider(
     "How Many Years Will You Hold / Have You Held the Property?",
     min_value=1,
-    max_value=40,
+    max_value=50,
     value=15
 )
 model_years = [purchase_year + i for i in range(years_held)]
@@ -224,7 +244,7 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
         withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
     st.session_state["withdrawal_rate"] = withdrawal_rate
 
-adjust_for_inflation = st.checkbox("🪄 View All Outputs in Inflation-Adjusted Dollars", value=True)
+adjust_for_inflation = st.checkbox("🪄 View All Outputs in Today's Dollars", value=True)
 
 with st.expander("❓ What's the difference between nominal and inflation-adjusted values?"):
     st.markdown("""
@@ -264,14 +284,20 @@ def amortization_schedule(loan_amount, annual_interest_rate, loan_term_years, ye
 
     return pd.DataFrame(schedule)
 
-def project_property_equity(purchase_price, appreciation_rate, loan_amount, annual_interest_rate, loan_term, years_held, start_year):
+def project_property_equity(purchase_price, appreciation_rate, loan_amount, annual_interest_rate, loan_term, years_held, start_year, inflation_rate=0.0, adjust_for_inflation=False):
     amort_df = amortization_schedule(loan_amount, annual_interest_rate, loan_term, years_held, start_year)
     equity_records = []
 
     for i, row in amort_df.iterrows():
         year = row["Year"]
-        value = purchase_price * ((1 + appreciation_rate / 100) ** (i+1))
+        value = purchase_price * ((1 + appreciation_rate / 100) ** i)
         equity = value - row["Ending Balance"]
+
+        if adjust_for_inflation:
+            inflation_factor = (1 + inflation_rate / 100) ** i
+            value /= inflation_factor
+            equity /= inflation_factor
+
         equity_records.append({
             "Year": year,
             "Estimated Property Value": value,
@@ -279,6 +305,7 @@ def project_property_equity(purchase_price, appreciation_rate, loan_amount, annu
             "Equity": equity
         })
     return pd.DataFrame(equity_records)
+
 
 fire_expenses = st.session_state["fire_expenses"]
 
@@ -329,11 +356,21 @@ if st.session_state["run_model"]:
     cash_on_cash = (annual_cash_flow_year_1 / down_payment) * 100 if down_payment else 0
     
     # --- Generate equity_df first ---
-    equity_df = project_property_equity(
-        purchase_price, appreciation_rate,
-        loan_amount, interest_rate,
-        loan_term, years_held, purchase_year
+    amort_schedule = amortization_schedule(
+        loan_amount, interest_rate, loan_term, years_held, purchase_year
     )
+
+    equity_records = project_property_equity(
+        purchase_price,
+        appreciation_rate,
+        amort_schedule,
+        inflation_rate,
+        adjust_for_inflation,
+        years_held,
+        start_year=purchase_year
+    )
+
+    equity_df = pd.DataFrame(equity_records)
     
     st.markdown("### 📊 Property Analysis")
     col1, col2 = st.columns(2)
@@ -366,17 +403,19 @@ if st.session_state["run_model"]:
     equity_df = project_property_equity(
         purchase_price, appreciation_rate,
         loan_amount, interest_rate,
-        loan_term, years_held, purchase_year
+        loan_term, years_held, purchase_year,
+        inflation_rate, adjust_for_inflation  # ✅ Add these two
     )
-    
+
     # 🔥 FIRE-Oriented Summary Insight
     years_out = years_held
     projected_equity = equity_df["Equity"].iloc[-1]
     cashflow_total = sum(cashflow_list)
 
     if adjust_for_inflation:
-        projected_equity /= inflation_factor
-        cashflow_total /= inflation_factor
+        projected_equity = equity_df["Equity"].iloc[-1]  # ✅ Already inflation-adjusted
+        #projected_equity /= inflation_factor  # ✅ Adjust equity at summary level
+        # cashflow_total was already discounted year-by-year
     
     total_property_value = projected_equity + cashflow_total
     fire_years_covered = total_property_value / fire_expenses if fire_expenses else 0
@@ -411,8 +450,19 @@ if st.session_state["run_model"]:
     else:
         st.info("🧾 This property breaks even in Year 1—neutral impact on your FIRE runway.")
 
-    if st.button("📤 Send These Results to Advanced Planner (Coming Soon)"):
-        st.info("We'll soon let you use this property's annual cash flow or net equity in your FIRE timeline. Stay tuned!")
+    if st.button("📤 Send These Results to Investment Comparison Tool"):
+        st.session_state["re_sync"] = True
+        st.session_state["purchase_year"] = purchase_year
+        st.session_state["property_value"] = purchase_price
+        st.session_state["down_payment_pct"] = down_payment_pct
+        st.session_state["mortgage_years"] = loan_term
+        st.session_state["mortgage_rate"] = interest_rate
+        st.session_state["appreciation_rate"] = appreciation_rate
+        st.session_state["annual_rent"] = annual_rent
+        st.session_state["rental_growth_rate"] = rental_growth_rate
+        st.session_state["annual_expenses"] = annual_expenses
+        st.session_state["years_held"] = years_held
+        st.success("✅ Inputs synced to Investment Comparison Tool.")
 
     st.markdown("### 📈 Equity Growth Over Time")
 
@@ -428,7 +478,7 @@ if st.session_state["run_model"]:
         ]
         equity_df["Plot Property Value"] = equity_df["Estimated Property Value"] / equity_df["Inflation Factor"]
         equity_df["Plot Loan Balance"] = equity_df["Loan Balance"] / equity_df["Inflation Factor"]
-        equity_df["Plot Equity"] = equity_df["Equity"] / equity_df["Inflation Factor"]
+        equity_df["Plot Equity"] = equity_df["Equity"]
     else:
         equity_df["Plot Property Value"] = equity_df["Estimated Property Value"]
         equity_df["Plot Loan Balance"] = equity_df["Loan Balance"]
@@ -497,6 +547,4 @@ if st.session_state["run_model"]:
 )
     st.plotly_chart(cf_fig, use_container_width=True)
     st.caption("📊 This chart shows how rental income, inflation, and fixed mortgage payments interact over time.")
-
-
 
