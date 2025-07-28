@@ -23,7 +23,9 @@ initialize_state({
     "mortgage_years": 30,
     "annual_rent": 24000,
     "annual_expenses": 5000,
-    "years_held": 15
+    "years_held": 15,
+    "closing_costs": 10000.0,
+    "renovation_costs": 15000.0,
     # Add other synced fields here
 })
 
@@ -43,19 +45,18 @@ st.caption("Model rental income, equity growth, and appreciation strategies to s
 # --- Intro ---
 with st.expander("💡 What Role Does Real Estate Play in FIRE?", expanded=False):
     st.markdown("""
-**Real estate** can be a powerful engine in your FIRE journey—offering both steady cash flow and long-term wealth through equity growth.
+**Real estate** can be a powerful lever in your FIRE strategy—offering both steady cash flow and long-term equity growth.
 
-This planner helps you answer a focused question:
-
+This planner helps you answer a pivotal question:  
 <blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“How much does this property contribute toward my financial independence?”</blockquote>
 
 ### What It Calculates:
-- **Annual Net Cash Flow**: Rental income minus operating costs and debt service  
-- **Equity Growth**: A year-by-year breakdown of mortgage payoff and appreciation  
-- **Property Value vs Loan Balance**: Track how your investment builds wealth over time  
-- **FIRE Summary**: Total projected cash flow and equity aligned to your FIRE timeline
+- **Net Cash Flow**: Rental income minus operating costs and loan payments  
+- **Equity Growth**: Year-by-year breakdown of appreciation and mortgage payoff  
+- **Wealth Timeline**: Property value vs loan balance over time  
+- **FIRE Summary**: Total projected cash flow + equity minus upfront costs, to reveal the property’s true FIRE contribution
 
-Experiment with inputs (purchase year, appreciation, expenses) and explore how your property helps you trade rent checks for freedom.
+Adjust inputs like purchase year, appreciation rate, or expenses—and discover how your property helps you swap rent checks for freedom.
 """, unsafe_allow_html=True)
 
 
@@ -73,7 +74,7 @@ purchase_year = st.number_input(
     "🗓️ Year Property Was (or Will Be) Purchased",
     min_value=this_year - 50,
     max_value=this_year + 50,
-    value=this_year,
+    value=st.session_state.get("purchase_year", this_year),
     step=1,
     help="Enter the year you bought or expect to buy this property."
 )
@@ -81,28 +82,54 @@ purchase_year = st.number_input(
 purchase_price = st.number_input(
     "🏠 Purchase Price ($)",
     min_value=0,
-    value=400000,
+    value=st.session_state.get("property_value", 400000),
     step=10000,
     help="Total property cost before fees or closing costs"
 )
 down_payment_pct = st.number_input(
     "💵 Down Payment (% of purchase price)",
     min_value=0.0,
-    value=20.0,
+    value=st.session_state.get("down_payment_pct", 25.0),
     step=1.0,
     help="Portion paid upfront; the rest is financed through a loan"
 )
+
+with st.expander("🧰 Additional Property Expenses", expanded=True):
+
+    closing_costs = st.number_input(
+        "🧾 Closing Costs ($)",
+        value=st.session_state.get("closing_costs", 10000.0),
+        step=500.0,
+        help="Fees and charges incurred at purchase (e.g., title, escrow, loan origination)."
+    )
+
+    renovation_costs = st.number_input(
+        "🛠️ Renovation Costs ($)",
+        value=st.session_state.get("renovation_costs", 15000.0),
+        step=1000.0,
+        help="Estimated post-purchase upgrade or repair expenses to improve livability or value."
+    )
+
+
+# 👉 Insert this block BELOW the inputs
+down_payment = purchase_price * (down_payment_pct / 100)
+
+# 🧮 New addition!
+property_initial_investment = down_payment + closing_costs + renovation_costs
+
+st.markdown(f"💵 **Total Initial Investment:** ${property_initial_investment:,.0f}")
+
 loan_term = st.number_input(
     "📅 Loan Term (years)",
     min_value=0,
-    value=30,
+    value=st.session_state.get("mortgage_years", 30),
     step=5,
     help="Length of your mortgage, usually 15–30 years"
 )
 interest_rate = st.number_input(
-    "📈 Interest Rate (%)",
+    "📈 Mortgage Interest Rate (%)",
     min_value=0.0,
-    value=6.0,
+    value=st.session_state.get("interest_rate", 6.0),
     step=0.1,
     help="Annual loan interest applied to the outstanding balance"
 )
@@ -110,12 +137,24 @@ interest_rate = st.number_input(
 annual_rent = st.number_input(
     "🏡 Annual Rental Income ($)",
     min_value=0,
-    value=24000,
+    value=st.session_state.get("annual_rent", 24000),
     step=1000,
     help="Gross rent expected from tenants in one year"
 )
 
-# 📈 Rental Growth Scenario Picker
+# 📈 Rental Income Growth Scenario Picker
+growth_rate_from_session = st.session_state.get("rental_growth_rate", 1.5)
+
+# Dynamically determine dropdown index based on session value
+if growth_rate_from_session == 1.0:
+    default_index = 1
+elif growth_rate_from_session == 1.5:
+    default_index = 2
+elif growth_rate_from_session == 3.0:
+    default_index = 3
+else:
+    default_index = 0  # Custom
+
 rental_growth_option = st.selectbox(
     "📈 Rental Income Growth Scenario",
     options=[
@@ -124,19 +163,20 @@ rental_growth_option = st.selectbox(
         "Market Average (1.5%)",
         "Aggressive (3.0%)"
     ],
-    index=1,
+    index=default_index,
     help=(
         "Pick a preset or choose 'Custom' to set your own annual rental growth rate. "
         "This reflects how much you expect rents to increase year over year."
     )
 )
 
+# Determine rental growth rate based on selection
 if rental_growth_option == "Custom":
     rental_growth_rate = st.slider(
         "Custom Rental Income Growth Rate (%)",
         min_value=0.0,
         max_value=10.0,
-        value=st.session_state.get("rental_growth_rate", 1.5),
+        value=growth_rate_from_session,
         step=0.1,
         help=(
             "Estimate how much your rental income will grow annually. "
@@ -146,29 +186,33 @@ if rental_growth_option == "Custom":
 else:
     rental_growth_rate = float(rental_growth_option.split("(")[-1].replace("%)", ""))
 
+# Sync selected rate to session state
 st.session_state["rental_growth_rate"] = rental_growth_rate
+
 
 annual_expenses = st.number_input(
     "🧾 Annual Operating Expenses ($)",
     min_value=0,
-    value=5000,
+    value=st.session_state.get("annual_expenses", 5000),
     step=500,
     help="Includes property tax, maintenance, insurance, vacancy buffer, etc."
 )
-with st.expander("📋 What's included in Operating Expenses?"):
-    st.markdown("""
-    This field typically includes:
-    - 🏛️ **Property Taxes** (e.g. 1–2% of purchase price)
-    - 🛠️ **Maintenance and Repairs**
-    - 🏡 **Insurance** and HOA dues
-    - 📉 **Vacancy/Turnover buffer**
+
+# with st.expander("📋 What's included in Operating Expenses?"):
+#     st.markdown("""
+#     This field typically includes:
+#     - 🏛️ **Property Taxes** (e.g. 1–2% of purchase price)
+#     - 🛠️ **Maintenance and Repairs**
+#     - 🏡 **Insurance** and HOA dues
+#     - 📉 **Vacancy/Turnover buffer**
     
-    If you want to model these separately, stay tuned for our Advanced Real Estate Planner 👷‍♀️
-    """)
+#     If you want to model these separately, stay tuned for our Advanced Real Estate Planner 👷‍♀️
+#     """)
+
 appreciation_rate = st.number_input(
     "📈 Property Appreciation Rate (%)",
     min_value=0.0,
-    value=3.0,
+    value=st.session_state.get("appreciation_rate", 3.0),
     step=0.1,
     help="Expected annual increase in property value, compounded yearly (e.g. 3 means ~3% growth per year)"
 )
@@ -176,7 +220,7 @@ years_held = st.slider(
     "How Many Years Will You Hold / Have You Held the Property?",
     min_value=1,
     max_value=50,
-    value=15
+    value=st.session_state.get("years_held", 15)
 )
 model_years = [purchase_year + i for i in range(years_held)]
 
@@ -202,7 +246,6 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
             "This affects future expenses and the purchasing power of your portfolio."
         )
     )
-
     if inflation_option == "Custom":
         inflation_rate = st.slider(
             "Custom Inflation Rate (%)",
@@ -244,16 +287,20 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
         withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
     st.session_state["withdrawal_rate"] = withdrawal_rate
 
-adjust_for_inflation = st.checkbox("🪄 View All Outputs in Today's Dollars", value=True)
+adjust_for_inflation = st.checkbox(
+    "🪄 View All Outputs in Today's Dollars",
+    value=True,
+    help="Shows inflation-adjusted results, meaning your future values expressed in today's purchasing power. Without adjustment, values appear in raw future dollars (nominal)."
+)
 
-with st.expander("❓ What's the difference between nominal and inflation-adjusted values?"):
-    st.markdown("""
-    <ul>
-        <li><strong>Nominal values:</strong> show raw dollars at each point in time—no adjustment for inflation</li>
-        <li><strong>Inflation-adjusted values:</strong> show today's equivalent dollars, revealing the <em>real</em> purchasing power over time</li>
-        <li><strong>Example:</strong> A property worth $500,000 in 20 years might only feel like $300,000 today if inflation averages 2.5% annually.</li>
-    </ul>
-    """, unsafe_allow_html=True)
+# with st.expander("❓ What's the difference between nominal and inflation-adjusted values?"):
+#     st.markdown("""
+#     <ul>
+#         <li><strong>Nominal values:</strong> show raw dollars at each point in time—no adjustment for inflation</li>
+#         <li><strong>Inflation-adjusted values:</strong> show today's equivalent dollars, revealing the <em>real</em> purchasing power over time</li>
+#         <li><strong>Example:</strong> A property worth $500,000 in 20 years might only feel like $300,000 today if inflation averages 2.5% annually.</li>
+#     </ul>
+#     """, unsafe_allow_html=True)
 
 # --- Core Calculators ---
 def amortization_schedule(loan_amount, annual_interest_rate, loan_term_years, years_held, start_year):
@@ -353,7 +400,7 @@ if st.session_state["run_model"]:
     cashflow_total = sum(cashflow_list)
     #annual_cash_flow_avg = sum(cashflow_list) / years_held
     annual_cash_flow_year_1 = cashflow_list[0]  # First year of projected cash flow
-    cash_on_cash = (annual_cash_flow_year_1 / down_payment) * 100 if down_payment else 0
+    cash_on_cash = (annual_cash_flow_year_1 / property_initial_investment) * 100 if property_initial_investment else 0
     
     # --- Generate equity_df first ---
     amort_schedule = amortization_schedule(
@@ -372,91 +419,118 @@ if st.session_state["run_model"]:
 
     equity_df = pd.DataFrame(equity_records)
     
-    st.markdown("### 📊 Property Analysis")
-    col1, col2 = st.columns(2)
-    with col1:
-            st.metric(
-                "💵 Year 1 Net Cash Flow",
-                f"${annual_cash_flow_year_1:,.0f}",
-                help="Net income in the first year after operating expenses and mortgage payments"
-            )
-    with col1:
-            st.metric(
-                "🏷️ Gross Yield",
-                f"{gross_yield:.2f}%",
-                help="Annual rent divided by purchase price (before expenses)"
-            )
-    with col2:
-            st.metric(
-                "📊 Cash-on-Cash Return (Year 1)",
-                f"{cash_on_cash:.2f}%",
-                help="Year 1 cash flow divided by down payment—standard metric used in real estate analysis"
-            )
-    with col2:
-            st.metric(
-                "💸 Est. Debt Service",
-                f"${annual_debt_service:,.0f}",
-                help="Approximate annual mortgage payment (interest-only estimate)"
-            )
+    # --- Title ---
+    st.markdown("### 🔥 Real Estate FIRE Summary")
 
-    # --- Equity Visualization ---
+    # --- Equity & Cash Flow Calculation ---
     equity_df = project_property_equity(
         purchase_price, appreciation_rate,
         loan_amount, interest_rate,
         loan_term, years_held, purchase_year,
-        inflation_rate, adjust_for_inflation  # ✅ Add these two
+        inflation_rate, adjust_for_inflation
     )
 
-    # 🔥 FIRE-Oriented Summary Insight
     years_out = years_held
     projected_equity = equity_df["Equity"].iloc[-1]
     cashflow_total = sum(cashflow_list)
 
     if adjust_for_inflation:
-        projected_equity = equity_df["Equity"].iloc[-1]  # ✅ Already inflation-adjusted
-        #projected_equity /= inflation_factor  # ✅ Adjust equity at summary level
-        # cashflow_total was already discounted year-by-year
-    
-    total_property_value = projected_equity + cashflow_total
-    fire_years_covered = total_property_value / fire_expenses if fire_expenses else 0
+        projected_equity = equity_df["Equity"].iloc[-1]  # Already inflation-adjusted
 
-    st.markdown("### 🔥 FIRE Impact Summary")
+    total_property_value = projected_equity + cashflow_total
+    net_fire_contribution = total_property_value - (closing_costs + renovation_costs)
+    fire_years_covered = total_property_value / fire_expenses if fire_expenses else 0
+    net_fire_years_covered = net_fire_contribution / fire_expenses if fire_expenses else 0
 
     equity_label = "🏠 Real Equity Built" if adjust_for_inflation else "🏠 Equity Built"
     cashflow_label = "💵 Inflation-Adjusted Rental Income" if adjust_for_inflation else "💵 Rental Income"
 
+    # --- FIRE-Focused Metrics ---
     col1, col2 = st.columns(2)
     with col1:
-        st.metric(equity_label, f"${projected_equity:,.0f}", help="Total equity from appreciation and loan paydown")
+        st.metric(
+            "💰 Total Initial Investment",
+            f"${property_initial_investment:,.0f}",
+            help="Upfront capital deployed including down payment, closing costs, and renovation expenses."
+        )
     with col2:
-        st.metric(cashflow_label, f"${cashflow_total:,.0f}", help="Cumulative cash flow over the hold period")
+        st.metric(
+            equity_label,
+            f"${projected_equity:,.0f}",
+            help="Equity gained from home appreciation and mortgage principal reduction."
+        )
     with col1:
-        st.metric("🔥 Total FIRE Contribution", f"${projected_equity + cashflow_total:,.0f}", help="Combined projected equity and cash flow from this property over the hold period")
+        st.metric(
+            cashflow_label,
+            f"${cashflow_total:,.0f}",
+            help="Cumulative rental income over the hold period."
+        )
     with col2:
-        st.metric("📆 FIRE Years Covered", f"{fire_years_covered:.1f} yrs", help="Years this property could cover based on your FI lifestyle cost")
+        st.metric(
+            "🔥 Net FIRE Contribution",
+            f"${net_fire_contribution:,.0f}",
+            help="Total rental income + equity minus closing and renovation costs."
+        )
+    with col1:
+        st.metric(
+            "📆 Net FIRE Years Covered",
+            f"{net_fire_years_covered:.1f} yrs",
+            help="Number of years this investment could support your FIRE lifestyle, net of upfront costs."
+        )
+    with col2:
+        st.metric(
+            "📈 ROI on Total Investment",
+            f"{(net_fire_contribution / property_initial_investment):.2f}x",
+            help="Return multiple based on initial investment including closing and renovation."
+        )
 
-
+    # --- FIRE Impact Narrative ---
     st.markdown(f"""
-    Over **{years_out} years**, this property could contribute **${projected_equity + cashflow_total:,.0f}** toward your path to financial independence.  
-    This includes both net rental income you receive along the way and equity built over time, which becomes available when you sell. 
+    Over **{years_out} years**, this property could contribute **${net_fire_contribution:,.0f}** toward your financial independence journey —  
+    after accounting for closing and renovation costs. This includes both cumulative rental income and equity growth, which become accessible when you sell.
     """)
-    #That's real estate pulling serious FIRE weight 💪🏽🏘️
+
+    # --- Traditional Metrics in Expander ---
+    with st.expander("📄 View Traditional Real Estate Metrics", expanded=False):
+        st.metric(
+            "💵 Year 1 Net Cash Flow",
+            f"${annual_cash_flow_year_1:,.0f}",
+            help="Net income after operating expenses and mortgage payments in Year 1."
+        )
+        st.metric(
+            "🏷️ Gross Yield",
+            f"{gross_yield:.2f}%",
+            help="Annual rent divided by purchase price (before expenses)."
+        )
+        st.metric(
+            "📊 Cash-on-Cash Return (Year 1)",
+            f"{cash_on_cash:.2f}%",
+            help="Return in Year 1 based on total upfront cash investment."
+        )
+        st.metric(
+            "🏦 Annual Mortgage Payment",
+            f"${annual_debt_service:,.0f}",
+            help="Principal and interest paid in the first year of your loan."
+        )
+        # --- Optional Year 1 Impact ---
+        if annual_cash_flow_year_1 != 0:
+            impact_msg = (
+                f"🎉 In Year 1, this property adds ${annual_cash_flow_year_1:,.0f}/year to your FIRE runway."
+                if annual_cash_flow_year_1 > 0 else
+                f"⚠️ In Year 1, negative cash flow of ${abs(annual_cash_flow_year_1):,.0f}/year could drag on your FIRE progress."
+            )
+            st.info(impact_msg)
 
 
-    if annual_cash_flow_year_1 > 0:
-        st.success(f"🎉 In Year 1, this property adds ${annual_cash_flow_year_1:,.0f}/year to your FIRE runway.")
-    elif annual_cash_flow_year_1 < 0:
-        st.warning(f"⚠️ In Year 1, negative cash flow of ${abs(annual_cash_flow_year_1):,.0f}/year could drag on your FIRE progress.")
-    else:
-        st.info("🧾 This property breaks even in Year 1—neutral impact on your FIRE runway.")
-
-    if st.button("📤 Send These Results to Investment Analyzer"):
+    if st.button("📤 Send Results to Investment Analyzer"):
         st.session_state["re_sync"] = True
         st.session_state["purchase_year"] = purchase_year
         st.session_state["property_value"] = purchase_price
+        st.session_state["renovation_costs"] = renovation_costs
+        st.session_state["closing_costs"] = closing_costs
         st.session_state["down_payment_pct"] = down_payment_pct
         st.session_state["mortgage_years"] = loan_term
-        st.session_state["mortgage_rate"] = interest_rate
+        st.session_state["interest_rate"] = interest_rate
         st.session_state["appreciation_rate"] = appreciation_rate
         st.session_state["annual_rent"] = annual_rent
         st.session_state["rental_growth_rate"] = rental_growth_rate

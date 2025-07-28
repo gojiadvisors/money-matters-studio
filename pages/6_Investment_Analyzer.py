@@ -17,7 +17,9 @@ initialize_state({
     "mortgage_years": 30,
     "annual_rent": 24000,
     "annual_expenses": 5000,
-    "years_held": 15
+    "years_held": 15,
+    "closing_costs": 10000.0,
+    "renovation_costs": 15000.0,
     # Add other synced fields here
 })
 
@@ -25,23 +27,23 @@ initialize_state({
 st.set_page_config(page_title="Investment Analyzer", page_icon="📊")
 
 st.title("📊 Investment Analyzer")
-st.caption("Compare strategic investment paths (🏘️ real estate and 📈 index funds) to see which accelerates your FIRE timeline more efficiently.")
+st.caption("Compare investment strategies (🏘️ real estate vs. 📈 stock market) to see which accelerates your FIRE timeline more efficiently.")
 
-with st.expander("💡 Which Investment Accelerates FIRE Faster?", expanded=False):
+with st.expander("💡 Which Investment Leads to FIRE Faster?", expanded=False):
     st.markdown("""
-Choosing between **real estate** and **equity markets** can shape the pace and flexibility of your path to financial independence.
+Choosing between **real estate** and **stock market** can shape the pace and flexibility of your path to financial independence.
 
 This module helps you answer the essential FIRE question:
 
-<blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“Should I invest in property or the stock market—and which one gets me to FIRE faster?”</blockquote>
+<blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“Should I invest in property or the stock market? Which one gets me to FIRE faster?”</blockquote>
 
 ### What It Compares:
 - 🏘️ **Real Estate**: Net cash flow, equity buildup, and appreciation over time  
-- 📈 **Equity Markets**: Portfolio compounding and dividend reinvestment  
-- 🧮 **Total FIRE Contribution**: Side-by-side outputs from both paths  
-- 🔁 **Break-Even Analysis**: See when one strategy overtakes the other
+- 📈 **Equity Markets**: Portfolio growth through compounding, dividend reinvestment, and consistent contributions
+- 🧮 **Total FIRE Contribution**: Real estate vs stock market outcomes, adjusted for net investment impact
+- 🔁 **Break-Even Analysis**: Year-by-year comparison to spotlight when one strategy pulls ahead
 
-This tool lets you simulate assumptions, explore trade-offs, and uncover the most effective wealth-building route—based on your timeline and risk comfort.
+This tool lets you simulate assumptions, explore trade-offs, and uncover the most effective wealth-building route based on your timeline and risk comfort.
 """, unsafe_allow_html=True)
 
 # --- Shared Inputs (Planner-style) ---
@@ -69,9 +71,9 @@ investment_years = st.slider(
 
 st.markdown("### 📂 Input Assumptions for Both Investment Paths")
 st.warning(
-    "To compare real estate and equity market strategies, be sure to enter your assumptions for **both tabs**.\n\n"
-    "🔹 Start with your property details in **Real Estate**\n\n"
-    "🔹 Then switch to **Equity Market** to configure stock-based growth assumptions"
+    "⚠️ To compare real estate and stock market, be sure to enter your assumptions for **BOTH** tabs.\n\n"
+    # "🔹 Start with your property details in **Real Estate**\n\n"
+    # "🔹 Then switch to **Equity Market** to configure stock-based growth assumptions"
 )
 
 #use_synced_investment = True  # You can later make this a checkbox toggle if desired
@@ -93,8 +95,24 @@ with tab1:
         help="Full market price of the property you'd like to invest in."
     )
 
+    with st.expander("🧰 Additional Property Expenses", expanded=True):
+
+        closing_costs = st.number_input(
+            "🧾 Closing Costs ($)",
+            value=st.session_state.get("closing_costs", 10000.0),
+            step=500.0,
+            help="Fees and charges incurred at purchase (e.g., title, escrow, loan origination)."
+        )
+
+        renovation_costs = st.number_input(
+            "🛠️ Renovation Costs ($)",
+            value=st.session_state.get("renovation_costs", 15000.0),
+            step=1000.0,
+            help="Estimated post-purchase upgrade or repair expenses to improve livability or value."
+        )
+
     if all_cash_purchase:
-        initial_investment = property_value
+        initial_investment = property_value + closing_costs + renovation_costs
         down_payment_pct = 100
         st.info("You're purchasing the property outright. No mortgage terms needed.")
     else:
@@ -106,8 +124,7 @@ with tab1:
             step=1.0,
             help="Portion paid upfront; the rest is financed through a loan."
         )
-
-        initial_investment = property_value * (down_payment_pct / 100)
+        initial_investment = property_value * (down_payment_pct / 100) + closing_costs + renovation_costs
 
         mortgage_years = st.number_input(
             "📅 Loan Term (years)",
@@ -119,14 +136,14 @@ with tab1:
         )
 
         mortgage_rate = st.number_input(
-            "📈 Interest Rate (%)",
+            "📈 Mortgage Interest Rate (%)",
             min_value=0.0,
-            max_value=10.0,
+            max_value=100.0,
             value=st.session_state.get("mortgage_rate", 6.0),
             step=0.1,
             help="Annual interest rate charged on the loan."
         )
-
+    
     # -- Performance Assumptions --
     appreciation_rate = st.number_input(
         "📈 Property Appreciation Rate (%)",
@@ -145,7 +162,17 @@ with tab1:
     )
 
     # 📈 Rental Income Growth Scenario Picker
-    default_growth = st.session_state.get("rental_growth_rate", 1.5)  # 👈 synced or fallback default
+    growth_rate_from_session = st.session_state.get("rental_growth_rate", 1.5)
+
+    # Dynamically determine default index based on session value
+    if growth_rate_from_session == 1.0:
+        default_index = 1
+    elif growth_rate_from_session == 1.5:
+        default_index = 2
+    elif growth_rate_from_session == 3.0:
+        default_index = 3
+    else:
+        default_index = 0  # Custom
 
     rental_growth_option = st.selectbox(
         "📈 Rental Income Growth Scenario",
@@ -155,19 +182,20 @@ with tab1:
             "Market Average (1.5%)",
             "Aggressive (3.0%)"
         ],
-        index=1,
+        index=default_index,
         help=(
             "Pick a preset or choose 'Custom' to set your own annual rental growth rate. "
             "This reflects how much you expect rents to increase year over year."
         )
     )
 
+    # Capture input based on selected option
     if rental_growth_option == "Custom":
         rental_growth_rate = st.slider(
             "Custom Rental Income Growth Rate (%)",
             min_value=0.0,
             max_value=10.0,
-            value=st.session_state.get("rental_growth_rate", 1.5),
+            value=growth_rate_from_session,
             step=0.1,
             help=(
                 "Estimate how much your rental income will grow annually. "
@@ -177,6 +205,7 @@ with tab1:
     else:
         rental_growth_rate = float(rental_growth_option.split("(")[-1].replace("%)", ""))
 
+    # Sync back to session
     st.session_state["rental_growth_rate"] = rental_growth_rate
 
     annual_expenses = st.number_input(
@@ -186,17 +215,27 @@ with tab1:
     step=500,
     help="Total costs per year including tax, maintenance, insurance, and management."
 )
+    
+    st.markdown(
+    f"""
+    <span style='font-size: 0.85rem; color: gray;'>
+    📘 This simulation assumes a property worth ${property_value:,.0f} with an initial investment of ${initial_investment:,.0f}, reflecting your upfront capital and purchase assumptions.
+    </span>
+    <br><br>
+    """,
+    unsafe_allow_html=True
+)
 
-    with st.expander("📋 What's included in Operating Expenses?"):
-        st.markdown("""
-        This field typically includes:
-        - 🏛️ **Property Taxes** (e.g. 1–2% of purchase price)
-        - 🛠️ **Maintenance and Repairs**
-        - 🏡 **Insurance** and HOA dues
-        - 📉 **Vacancy/Turnover buffer**
+    # with st.expander("📋 What's included in Operating Expenses?"):
+    #     st.markdown("""
+    #     This field typically includes:
+    #     - 🏛️ **Property Taxes** (e.g. 1–2% of purchase price)
+    #     - 🛠️ **Maintenance and Repairs**
+    #     - 🏡 **Insurance** and HOA dues
+    #     - 📉 **Vacancy/Turnover buffer**
 
-        You can refine this breakdown in advanced modules.
-        """)
+    #     You can refine this breakdown in advanced modules.
+    #     """)
 
 
 # -- Inflation Assumption --
@@ -228,22 +267,12 @@ with st.expander("📉 Inflation Scenario", expanded=True):
     st.caption(f"📘 We'll adjust values for inflation using an estimated {inflation_rate:.1f}% annually.")
 
 
-st.markdown(
-    f"""
-    <span style='font-size: 0.85rem; color: gray;'>
-    📘 This simulation assumes a property worth ${property_value:,.0f} with an initial investment of ${initial_investment:,.0f}, reflecting your upfront capital and purchase assumptions.
-    </span>
-    <br><br>
-    """,
-    unsafe_allow_html=True
-)
-
 with tab2:
-    st.subheader("📈 Equity Market Scenario")
+    st.subheader("📈 Stock Market Scenario")
 
     if use_synced_investment:
         index_investment = initial_investment  # synced from real estate tab
-        st.text(f"💵 Index Fund Investment: ${index_investment:,.0f} (synced from real estate scenario)")
+        st.text(f"💵 Stock Index Fund Investment: ${index_investment:,.0f} (synced from real estate scenario)")
     else:
         index_investment = st.number_input(
             "💵 Initial Amount Invested in Index Fund ($)",
@@ -320,23 +349,24 @@ with tab2:
 adjust_for_inflation = st.checkbox(
     "🪄 View All Outputs in Today's Dollars",
     value=True,
-    help="Enable to express all results in today's purchasing power."
+    help="Shows inflation-adjusted results, meaning your future values expressed in today's purchasing power. Without adjustment, values appear in raw future dollars (nominal)."
 )
-with st.expander("❓ What's the difference between nominal and inflation-adjusted values?"):
-    st.markdown("""
-    <ul>
-        <li><strong>Nominal values:</strong> show raw dollars at each point in time—no adjustment for inflation</li>
-        <li><strong>Inflation-adjusted values:</strong> show today's equivalent dollars, revealing the <em>real</em> purchasing power over time</li>
-        <li><strong>Example:</strong> A property worth $500,000 in 20 years might only feel like $300,000 today if inflation averages 2.5% annually.</li>
-    </ul>
-    """, unsafe_allow_html=True)
+# with st.expander("❓ What's the difference between nominal and inflation-adjusted values?"):
+#     st.markdown("""
+#     <ul>
+#         <li><strong>Nominal values:</strong> show raw dollars at each point in time—no adjustment for inflation</li>
+#         <li><strong>Inflation-adjusted values:</strong> show today's equivalent dollars, revealing the <em>real</em> purchasing power over time</li>
+#         <li><strong>Example:</strong> A property worth $500,000 in 20 years might only feel like $300,000 today if inflation averages 2.5% annually.</li>
+#     </ul>
+#     """, unsafe_allow_html=True)
 
 # --- 🚀 Simulation Logic Functions ---
 
 def simulate_real_estate_fire_contribution(
     property_value, down_payment_pct, mortgage_rate, mortgage_years,
     annual_rent, annual_expenses, rental_growth_rate,
-    appreciation_rate, investment_years, inflation_rate, adjust_for_inflation, start_year=purchase_year
+    appreciation_rate, investment_years, inflation_rate, adjust_for_inflation, 
+    closing_costs=0.0, renovation_costs=0.0, start_year=purchase_year
 ):
     loan_amount = property_value * (1 - down_payment_pct / 100)
     annual_debt_service = 0 if down_payment_pct == 100 else npf.pmt(
@@ -359,7 +389,7 @@ def simulate_real_estate_fire_contribution(
         investment_years, inflation_rate, adjust_for_inflation
     )
 
-    fire_contribution = equity_records[-1]["equity"] + sum(cashflow_records)
+    fire_contribution = equity_records[-1]["equity"] + sum(cashflow_records) - (closing_costs + renovation_costs)
     return fire_contribution, equity_records, cashflow_records
 
 def simulate_equity(
@@ -479,7 +509,9 @@ if st.button("▶️ Run Investment Analyzer"):
         investment_years,
         inflation_rate,
         #2.5,  # inflation_rate (you can expose this too)
-        adjust_for_inflation
+        adjust_for_inflation,
+        closing_costs,
+        renovation_costs
     )
     equity_df = pd.DataFrame(re_history)  # re_history = equity_records
 
@@ -494,6 +526,7 @@ if st.button("▶️ Run Investment Analyzer"):
         adjust_for_inflation
     )
 
+    real_estate_upfront = closing_costs + renovation_costs
     fire_yearly = []
     re_cash_cumulative = 0
 
@@ -505,8 +538,13 @@ if st.button("▶️ Run Investment Analyzer"):
         re_equity = re_history[i]["equity"]
         re_cash = re_cashflow[i]
         re_cash_cumulative += re_cash
-        re_cumulative = re_equity + re_cash_cumulative
-        re_annual = (re_history[i]["equity"] - re_history[i-1]["equity"] if i > 0 else re_equity) + re_cash
+
+        if i == 0:
+            re_annual = re_equity + re_cash - real_estate_upfront
+        else:
+            re_annual = (re_equity - re_history[i-1]["equity"]) + re_cash
+
+        re_cumulative = re_equity + re_cash_cumulative - real_estate_upfront
 
         # Index Fund
         eq_current = eq_history[i]["portfolio_value"]
@@ -522,6 +560,7 @@ if st.button("▶️ Run Investment Analyzer"):
             "Index Fund (Cumulative)": eq_cumulative
         })
 
+
     fire_df = pd.DataFrame(fire_yearly)
 
     # Display Results side by side
@@ -531,13 +570,35 @@ if st.button("▶️ Run Investment Analyzer"):
     col1, col2 = st.columns(2)
 
     with col1:
-        st.metric("🏘️ Real Estate FIRE Contribution", f"${re_contribution:,.0f}")
+        st.metric("🏘️ Real Estate FIRE Contribution", f"${re_contribution:,.0f}", help="Equity + rental cash flow minus closing and renovation costs.")
     with col2:
         st.metric("📈 Index Fund FIRE Contribution", f"${eq_contribution:,.0f}")
+
+    # --- ROI Comparison (based on initial investment) ---
+
+    real_estate_roi = re_contribution / initial_investment if initial_investment else 0
+    index_fund_roi = eq_contribution / index_investment if index_investment else 0
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(
+            "🏘️ Real Estate ROI",
+            f"{real_estate_roi:.2f}x",
+            help="Net FIRE contribution divided by total upfront investment (including closing + renovation)."
+        )
+    with col2:
+        st.metric(
+            "📈 Index Fund ROI",
+            f"{index_fund_roi:.2f}x",
+            help="Growth of your index portfolio compared to initial investment over the same time horizon."
+        )
+
 
     # YoY Table
 
     st.subheader("📊 Year-by-Year FIRE Contributions")
+    st.caption("💡 Year 0 reflects the upfront investment costs for the real estate strategy, resulting in a lower starting point.")
 
     def highlight_winner(row):
         re_value = row["Real Estate (Cumulative)"]

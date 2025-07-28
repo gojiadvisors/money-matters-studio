@@ -8,25 +8,26 @@ st.set_page_config(page_title="FIRE Tracker", page_icon="🔥")
 st.title("🔥 FIRE Tracker")
 st.caption("Find out how close you are to financial independence.")
 
-with st.expander("💡 What is FIRE and How Does This Tool Help?", expanded=False):
+with st.expander("💡 What Is FIRE and How Does This Tool Help?", expanded=False):
     st.markdown("""
-    **FIRE** stands for **Financial Independence, Retire Early**, a movement focused on reclaiming time, freedom, and choice by building a nest egg large enough to support your lifestyle without needing to work for money.
-    This tracker helps you answer one big question:
+    **FIRE** stands for **Financial Independence - Retire Early**,  a movement built around achieving freedom and flexibility by covering your lifestyle without relying on active income.
+
+    This tool helps you quickly answer:
     """)
     st.markdown(
-        "<blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“How close am I to financial independence, and how long will it take me to get there?”</blockquote>",
+        "<blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“How far am I from financial independence, and what will get me there faster?”</blockquote>",
         unsafe_allow_html=True
     )
     st.markdown("""
-                
-### What It Calculates:
-- **FIRE Number**: The amount of $ you need to save to sustainably cover your future lifestyle
-- **Years to FIRE**: How long it’ll take to reach your FIRE Number, given your current savings habits
-- **Net Worth Trajectory**: A year-by-year look at your financial progress
-- **Progress Bar + Feedback**: Visual tools and insights to keep you motivated
+### What You’ll See:
+- **Your FIRE Goal Number**: How much you need to achieve freedom
+- **Time to FIRE**: Estimated years until you reach your goal
+- **Growth Path**: Year-by-year net worth projections
+- **Personalized Feedback**: Actionable insights based on your inputs
 
-Customize your inputs below and explore how your financial future unfolds.
+Adjust your assumptions below and track your journey toward financial independence.
     """)
+
 
 
 st.header("📥 Input Your Info")
@@ -270,6 +271,7 @@ if st.button("Calculate My FIRE Path"):
     else:
         st.info(f"Every FIRE journey starts with that first spark. You’re {progress_pct * 100:.1f}% there. With your current pace, independence is on the horizon in about {years_to_fi} years.")
 
+
     st.subheader("📈 Net Worth Projection")
 
     fig = go.Figure()
@@ -355,5 +357,12 @@ if st.button("Calculate My FIRE Path"):
 
     st.plotly_chart(fig, use_container_width=True)
 
+    st.markdown("""
+    ⚠️ **Important note:**  
+    This tool assumes your retirement will span about 30 years, following standard safe withdrawal guidelines. 
+    If you expect a longer retirement (such as retiring in your 30s or 40s), you may need a higher FIRE Goal number. 
+    For deeper analysis, check out the Advanced Planner (coming soon).
+    """)
+
     # Optional prompt to explore more tools
-    st.markdown("🏡 Want to model rental income or property appreciation? Try the **Real Estate Planner** in the sidebar.")
+    #st.markdown("🏡 Want to model rental income or property appreciation? Try the **Real Estate Planner** in the sidebar.")
