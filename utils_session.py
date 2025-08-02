@@ -1,13 +1,15 @@
 import streamlit as st
+from session_defaults import DEFAULTS
 
-def initialize_state(defaults: dict):
-    """
-    Initializes Streamlit session state variables with defaults if not already set.
-
-    Args:
-        defaults (dict): A dictionary where keys are variable names and values are default values.
-    """
-    if "initialized" not in st.session_state:
-        st.session_state.initialized = True
+def initialize_state_once(defaults: dict):
+    if "state_initialized" not in st.session_state:
         for key, value in defaults.items():
-            st.session_state[key] = st.session_state.get(key, value)
+            if key not in st.session_state:
+                st.session_state[key] = value
+        st.session_state["state_initialized"] = True
+
+def clear_session_state():
+    for key in DEFAULTS:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.session_state["state_initialized"] = False

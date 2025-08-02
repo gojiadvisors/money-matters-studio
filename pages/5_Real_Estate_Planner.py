@@ -5,40 +5,22 @@ import plotly.graph_objects as go
 import numpy_financial as npf
 import datetime
 this_year = datetime.datetime.now().year
+from session_defaults import DEFAULTS
+from utils_session import initialize_state_once
+initialize_state_once(DEFAULTS)  # ✅ now has the required argument
+def clear_session_state():
+    for key in st.session_state.keys():
+        del st.session_state[key]
 
-
-if "run_model" not in st.session_state:
-    st.session_state["run_model"] = False
-
-from utils_session import initialize_state
-
-initialize_state({
-    "purchase_year": this_year,
-    "purchase_price": 400000,
-    "down_payment_pct": 25.0,
-    "loan_term": 30,
-    "interest_rate": 3.0,
-    "rental_growth_rate": 1.5,
-    "appreciation_rate": 3.0,
-    "mortgage_years": 30,
-    "annual_rent": 24000,
-    "annual_expenses": 5000,
-    "years_held": 15,
-    "closing_costs": 10000.0,
-    "renovation_costs": 15000.0,
-    # Add other synced fields here
-})
+col1, col2, col3 = st.columns([6, 1, 1])
+with col3:
+    if st.button("🔄 Reset", help="Reset Session Inputs"):
+        clear_session_state()
+        st.rerun()
 
 
 # --- Page Setup ---
 st.set_page_config(page_title="Real Estate Planner", page_icon="🏡")
-
-# --- Initialize session keys if missing ---
-st.session_state.setdefault("fire_expenses", 80000)
-st.session_state.setdefault("inflation_rate", 2.5)
-st.session_state.setdefault("withdrawal_rate", 3.5)
-
-
 st.title("🏘️ Real Estate Planner")
 st.caption("Model rental income, equity growth, and appreciation strategies to support your FIRE plan.")
 
@@ -63,13 +45,6 @@ Adjust inputs like purchase year, appreciation rate, or expenses—and discover 
 # --- Inputs ---
 st.subheader("📋 Property Info")
 
-fire_expenses = st.session_state["fire_expenses"]
-inflation_rate = st.session_state["inflation_rate"]
-withdrawal_rate = st.session_state["withdrawal_rate"]
-
-import datetime
-this_year = datetime.datetime.now().year
-
 purchase_year = st.number_input(
     "🗓️ Year Property Was (or Will Be) Purchased",
     min_value=this_year - 50,
@@ -78,14 +53,17 @@ purchase_year = st.number_input(
     step=1,
     help="Enter the year you bought or expect to buy this property."
 )
+st.session_state["purchase_year"] = purchase_year
 
 purchase_price = st.number_input(
     "🏠 Purchase Price ($)",
     min_value=0,
-    value=st.session_state.get("property_value", 400000),
+    value=st.session_state.get("purchase_price", 400000),
     step=10000,
     help="Total property cost before fees or closing costs"
 )
+st.session_state["purchase_price"] = purchase_price
+
 down_payment_pct = st.number_input(
     "💵 Down Payment (% of purchase price)",
     min_value=0.0,
@@ -93,6 +71,7 @@ down_payment_pct = st.number_input(
     step=1.0,
     help="Portion paid upfront; the rest is financed through a loan"
 )
+st.session_state["down_payment_pct"] = down_payment_pct
 
 with st.expander("🧰 Additional Property Expenses", expanded=True):
 
@@ -102,6 +81,7 @@ with st.expander("🧰 Additional Property Expenses", expanded=True):
         step=500.0,
         help="Fees and charges incurred at purchase (e.g., title, escrow, loan origination)."
     )
+    st.session_state["closing_costs"] = closing_costs
 
     renovation_costs = st.number_input(
         "🛠️ Renovation Costs ($)",
@@ -109,7 +89,7 @@ with st.expander("🧰 Additional Property Expenses", expanded=True):
         step=1000.0,
         help="Estimated post-purchase upgrade or repair expenses to improve livability or value."
     )
-
+    st.session_state["renovation_costs"] = renovation_costs
 
 # 👉 Insert this block BELOW the inputs
 down_payment = purchase_price * (down_payment_pct / 100)
@@ -126,6 +106,8 @@ loan_term = st.number_input(
     step=5,
     help="Length of your mortgage, usually 15–30 years"
 )
+st.session_state["mortgage_years"] = loan_term
+
 interest_rate = st.number_input(
     "📈 Mortgage Interest Rate (%)",
     min_value=0.0,
@@ -133,6 +115,7 @@ interest_rate = st.number_input(
     step=0.1,
     help="Annual loan interest applied to the outstanding balance"
 )
+st.session_state["interest_rate"] = interest_rate
 
 annual_rent = st.number_input(
     "🏡 Annual Rental Income ($)",
@@ -141,6 +124,7 @@ annual_rent = st.number_input(
     step=1000,
     help="Gross rent expected from tenants in one year"
 )
+st.session_state["annual_rent"] = annual_rent
 
 # 📈 Rental Income Growth Scenario Picker
 growth_rate_from_session = st.session_state.get("rental_growth_rate", 1.5)
@@ -189,7 +173,6 @@ else:
 # Sync selected rate to session state
 st.session_state["rental_growth_rate"] = rental_growth_rate
 
-
 annual_expenses = st.number_input(
     "🧾 Annual Operating Expenses ($)",
     min_value=0,
@@ -197,6 +180,7 @@ annual_expenses = st.number_input(
     step=500,
     help="Includes property tax, maintenance, insurance, vacancy buffer, etc."
 )
+st.session_state["annual_expenses"] = annual_expenses
 
 # with st.expander("📋 What's included in Operating Expenses?"):
 #     st.markdown("""
@@ -216,12 +200,15 @@ appreciation_rate = st.number_input(
     step=0.1,
     help="Expected annual increase in property value, compounded yearly (e.g. 3 means ~3% growth per year)"
 )
+st.session_state["appreciation_rate"] = appreciation_rate
+
 years_held = st.slider(
     "How Many Years Will You Hold / Have You Held the Property?",
     min_value=1,
     max_value=50,
     value=st.session_state.get("years_held", 15)
 )
+st.session_state["years_held"] = years_held
 model_years = [purchase_year + i for i in range(years_held)]
 
 with st.expander("🔧 Customize Your Assumptions", expanded=True):
@@ -237,29 +224,27 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
     st.session_state["fire_expenses"] = fire_expenses
 
     # Inflation Presets
-    inflation_option = st.selectbox(
-        "📉 Inflation Scenario",
-        options=["Custom", "Low (1.5%)", "Average (2.5%)", "High (4.0%)"],
-        index=2,
-        help=(
-            "Your expected long-term average increase in prices. "
-            "This affects future expenses and the purchasing power of your portfolio."
-        )
-    )
-    if inflation_option == "Custom":
-        inflation_rate = st.slider(
-            "Custom Inflation Rate (%)",
-            min_value=0.0,
-            max_value=10.0,
-            value=st.session_state.get("inflation_rate", 2.5),
-            step=0.1,
-            help=(
-                "Set your own inflation estimate. Higher values reduce your future purchasing power and raise your FIRE target."
-            )
-        )
-    else:
-        inflation_rate = float(inflation_option.split("(")[-1].replace("%)", ""))
-    st.session_state["inflation_rate"] = inflation_rate
+    # Map preset labels to inflation rates
+    preset_map = {
+        "Low (1.5%)": 1.5,
+        "Average (2.5%)": 2.5,
+        "High (4.0%)": 4.0
+    }
+
+    # Identify preset match based on session inflation_rate
+    current_rate = st.session_state.get("inflation_rate", 2.5)
+    matched_label = next((label for label, rate in preset_map.items() if rate == current_rate), None)
+
+    # Define available options
+    options = ["Custom"] + list(preset_map.keys())
+
+    # Pick dropdown index based on match or prior selection
+    dropdown_index = options.index(matched_label) if matched_label else options.index(st.session_state.get("inflation_option", "Average (2.5%)"))
+
+    # Select inflation scenario
+    # Inflation Input from Shared Component
+    from shared_components import inflation_picker
+    inflation_rate = inflation_picker()
 
     # Withdrawal Presets
     withdrawal_option = st.selectbox(

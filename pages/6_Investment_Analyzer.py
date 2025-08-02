@@ -3,25 +3,18 @@ import numpy_financial as npf
 import pandas as pd
 import datetime
 this_year = datetime.datetime.now().year
+from session_defaults import DEFAULTS
+from utils_session import initialize_state_once
+initialize_state_once(DEFAULTS)  # ✅ now has the required argument
+def clear_session_state():
+    for key in st.session_state.keys():
+        del st.session_state[key]
 
-from utils_session import initialize_state
-
-initialize_state({
-    "purchase_year": this_year,
-    "purchase_price": 400000,
-    "down_payment_pct": 25.0,
-    "loan_term": 30,
-    "interest_rate": 3.0,
-    "rental_growth_rate": 1.5,
-    "appreciation_rate": 3.0,
-    "mortgage_years": 30,
-    "annual_rent": 24000,
-    "annual_expenses": 5000,
-    "years_held": 15,
-    "closing_costs": 10000.0,
-    "renovation_costs": 15000.0,
-    # Add other synced fields here
-})
+col1, col2, col3 = st.columns([6, 1, 1])
+with col3:
+    if st.button("🔄 Reset", help="Reset Session Inputs"):
+        clear_session_state()
+        st.rerun()
 
 # --- Page Setup ---
 st.set_page_config(page_title="Investment Analyzer", page_icon="📊")
@@ -91,9 +84,10 @@ with tab1:
         "🏠 Property Purchase Price ($)",
         min_value=50000,
         step=10000,
-        value=st.session_state.get("property_value", 400000),
+        value=st.session_state.get("purchase_price", 400000),
         help="Full market price of the property you'd like to invest in."
     )
+    st.session_state["purchase_price"] = property_value
 
     with st.expander("🧰 Additional Property Expenses", expanded=True):
 
@@ -103,6 +97,8 @@ with tab1:
             step=500.0,
             help="Fees and charges incurred at purchase (e.g., title, escrow, loan origination)."
         )
+        st.session_state["closing_costs"] = closing_costs
+
 
         renovation_costs = st.number_input(
             "🛠️ Renovation Costs ($)",
@@ -110,6 +106,7 @@ with tab1:
             step=1000.0,
             help="Estimated post-purchase upgrade or repair expenses to improve livability or value."
         )
+        st.session_state["renovation_costs"] = renovation_costs
 
     if all_cash_purchase:
         initial_investment = property_value + closing_costs + renovation_costs
@@ -239,30 +236,10 @@ with tab1:
 
 
 # -- Inflation Assumption --
-with st.expander("📉 Inflation Scenario", expanded=True):
-    preset = st.selectbox(
-        "Choose Your Inflation Estimate",
-        options=["Use global default", "Low (1.5%)", "Average (2.5%)", "High (4.0%)", "Custom"],
-        index=2,
-        help="Used to adjust future cash flows and equity for purchasing power."
-    )
-
-    if preset == "Use global default":
-        inflation_rate = st.session_state.get("inflation_rate", 2.5)  # fallback if not preset
-    elif preset == "Custom":
-        inflation_rate = st.slider(
-            "Custom Inflation Rate (%)",
-            min_value=0.0,
-            max_value=10.0,
-            value=2.5,
-            step=0.1,
-            help="Set your own expected inflation rate."
-        )
-    else:
-        try:
-            inflation_rate = float(preset.split("(")[-1].replace("%)", ""))
-        except ValueError:
-            inflation_rate = 2.5  # safety fallback
+#with st.expander("📉 Inflation Scenario", expanded=True):
+    # Inflation Input from Shared Component
+    from shared_components import inflation_picker
+    inflation_rate = inflation_picker()
 
     st.caption(f"📘 We'll adjust values for inflation using an estimated {inflation_rate:.1f}% annually.")
 

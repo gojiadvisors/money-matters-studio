@@ -1,5 +1,10 @@
 import streamlit as st
 from navigation import studio_nav
+from utils_session import initialize_state
+import datetime
+
+this_year = datetime.datetime.now().year  # Needed for some default fields
+
 
 st.set_page_config(page_title="Lifestyle Budgeter", page_icon="🎒")
 

@@ -1,10 +1,23 @@
 import plotly.graph_objects as go
 import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
+import datetime
+this_year = datetime.datetime.now().year
+from session_defaults import DEFAULTS
+from utils_session import initialize_state_once
+initialize_state_once(DEFAULTS)  # ✅ now has the required argument
+
+def clear_session_state():
+    for key in st.session_state.keys():
+        del st.session_state[key]
+
+col1, col2, col3 = st.columns([6, 1, 1])
+with col3:
+    if st.button("🔄 Reset", help="Reset Session Inputs"):
+        clear_session_state()
+        st.rerun()
 
 st.set_page_config(page_title="FIRE Tracker", page_icon="🔥")
-
-##t.image("logo.png", width=120)
 st.title("🔥 FIRE Tracker")
 st.caption("Find out how close you are to financial independence.")
 
@@ -28,248 +41,205 @@ with st.expander("💡 What Is FIRE and How Does This Tool Help?", expanded=Fals
 Adjust your assumptions below and track your journey toward financial independence.
     """)
 
-
-
 st.header("📥 Input Your Info")
 
 # Input fields
 liquid_assets = st.number_input(
     "💰 Liquid or Investable Assets ($)",
-    value=100000,
+    value=st.session_state.get("liquid_assets", 100000),
     step=1000,
-    help="Include brokerage accounts, retirement accounts (401k, IRA), HSA, and cash savings. These are assets contributing to your FIRE path."
+    help="Include brokerage accounts, retirement accounts (401k, IRA), HSA, and cash savings."
 )
+st.session_state["liquid_assets"] = liquid_assets
+
 illiquid_assets = st.number_input(
-    "🏠 Illiquid Assets (e.g. home equity) ($)",
-    value=0,
+    "🏠 Illiquid Assets (e.g. primary home equity) ($)",
+    value=st.session_state.get("illiquid_assets", 0),
     step=1000,
-    help="Include your primary residence's equity, private businesses, real estate not producing income, collectibles, and other non-liquid holdings."
+    help="Include equity in your primary home, private businesses, or non-liquid holdings."
 )
-include_illiquid = st.checkbox("Include illiquid assets (e.g. home equity) in FIRE calculation?")
+st.session_state["illiquid_assets"] = illiquid_assets
+include_illiquid = st.checkbox("Include illiquid assets (e.g. home equity) in FIRE calculation?",
+    value=st.session_state.get("include_illiquid", False))
+st.session_state["include_illiquid"] = include_illiquid
+
 if include_illiquid:
-    st.info("🏠 *You're including illiquid assets in your FIRE projection.*\n\nThis assumes you could sell or unlock equity from property or other non-liquid holdings, like real estate, private businesses, or collectibles.")
+    st.info("🏠 *You're including illiquid assets like real estate or collectibles in your FIRE estimate.*")
 else:
-    st.info("💰 *You're excluding illiquid assets from your FIRE projection.*\n\nThis gives a conservative view based only on accessible, investable funds like brokerage accounts, retirement accounts, and cash.")
-if include_illiquid:
-    current_net_worth = liquid_assets + illiquid_assets
-else:
-    current_net_worth = liquid_assets
-st.caption("🔍 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. But note: real estate cash flow and appreciation are handled in a separate module.")
+    st.info("💰 *You're excluding illiquid assets for a conservative FIRE estimate based on accessible funds.*")
+
+# Net worth assignment (already handled)
+current_net_worth = liquid_assets + illiquid_assets if include_illiquid else liquid_assets
 total_net_worth = liquid_assets + illiquid_assets
+
+# Add optional caption below inputs
+#st.caption("🔍 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. But note: real estate cash flow and appreciation are handled in a separate module.")
+
 # Annual Savings
 annual_savings = st.number_input(
     "Annual Savings ($)",
-    value=30000,
+    value=st.session_state.get("annual_savings", 30000),
     step=100,
-    help="Total amount you save each year towards FI, including retirement and brokerage contributions."
-) 
-savings_growth_scenario = st.selectbox(
-    "Annual Savings Growth Scenario",
-    options=[
-        "Custom",
-        "Flat (0.0%)",
-        "Conservative (1.0%)",
-        "Typical Merit Increase (2.0%)",
-        "Strong Career Growth (3.5%)",
-        "Temporary Setback (-1.0%)"
-    ],
-    index=1,
-    help="Choose how your annual savings might evolve based on career trajectory, lifestyle changes, or personal planning."
+    help="Total annual contributions to your FIRE portfolio."
 )
+st.session_state["annual_savings"] = annual_savings
 
-if savings_growth_scenario == "Custom":
-    merit_increase_rate = st.slider(
-        "Annual Savings Growth Rate (%)",
-        min_value=-5.0,
-        max_value=10.0,
-        value=0.0,
-        step=0.1,
-        help="Assumes your annual savings will increase (or decrease) each year due to merit raises, setbacks, or lifestyle adjustments."
-    )
-else:
-    savings_growth_map = {
-        "Flat (0.0%)": 0.0,
-        "Conservative (1.0%)": 1.0,
-        "Typical Merit Increase (2.0%)": 2.0,
-        "Strong Career Growth (3.5%)": 3.5,
-        "Temporary Setback (-1.0%)": -1.0
-    }
-    merit_increase_rate = savings_growth_map[savings_growth_scenario]
+# Savings Growth Scenario
+from shared_components import growth_picker
+savings_growth, return_label= growth_picker()
 
-merit_growth = merit_increase_rate / 100  # Convert to decimal format
+# Annual Return of investments
 
-# Expected Annual Return Scenario Picker
-return_option = st.selectbox(
-    "📊 Annual Return on Investment Scenario",
-    options=["Custom", "Conservative (5.0%)", "Balanced (7.0%)", "Aggressive (9.0%)"],
-    index=1,
-    help=(
-        "This is the projected average yearly growth rate of your investments before retirement. "
-        "It reflects a mix of market returns, dividends, and compound growth, minus fees and taxes. "
-        "Pick a scenario that aligns with your portfolio strategy or enter a custom rate."
-    )
+from shared_components import return_picker
+annual_return, return_label = return_picker()
+#st.caption(f"📘 Using **{return_label}** scenario → {annual_return * 100:.1f}% expected annual return.")
+
+# --- ASSUMPTIONS BLOCK ---
+fire_expenses = st.number_input(
+    "🔥 Annual FIRE Spending Target ($)",
+    value=st.session_state.get("fire_expenses", 80000),
+    step=1000,
+    help="Expected yearly spending after achieving FIRE."
 )
+st.session_state["fire_expenses"] = fire_expenses
 
-if return_option == "Custom":
-    expected_return_percent = st.slider(
-        "Custom Expected Annual Return (%)",
-        min_value=3.0,
-        max_value=10.0,
-        value=st.session_state.get("expected_return_percent", 7.0),
-        step=0.1,
-        help=(
-            "Manually enter your expected annual portfolio growth rate. "
-            "Consider historical market returns, diversification, fees, and taxes. "
-            "This rate directly impacts how fast your net worth grows toward your FIRE goal."
-        )
-    )
-else:
-    expected_return_percent = float(return_option.split("(")[-1].replace("%)", ""))
-st.session_state["expected_return_percent"] = expected_return_percent
+# Inflation Input from Shared Component
+from shared_components import inflation_picker
+inflation_rate = inflation_picker()
 
-annual_return = expected_return_percent / 100  # Convert to decimal
+# Withdrawl Scenario
+from shared_components import withdrawal_picker
 
-with st.expander("🔧 Customize Your Assumptions", expanded=True):
-    fire_expenses = st.number_input(
-        "🔥 Annual FIRE Spending Target ($)",
-        min_value=0,
-        value=st.session_state.get("fire_expenses", 80000),
-        step=1000,
-        help="How much you expect to spend annually once financially independent."
-    )
-    st.session_state["fire_expenses"] = fire_expenses
+withdrawal_rate, withdrawal_scenario = withdrawal_picker()
+#st.caption(f"📘 Using **{withdrawal_scenario}** scenario → {withdrawal_rate * 100:.2f}% withdrawal rate.")
 
-    # Inflation Scenario Picker
-    inflation_option = st.selectbox(
-        "📉 Inflation Scenario",
-        options=["Custom", "Low (1.5%)", "Average (2.5%)", "High (4.0%)"],
-        index=2,
-        help=(
-            "Inflation is the average rate at which prices increase over time. "
-            "It affects how much future dollars will actually buy, which impacts your FIRE target. "
-            "Choose a historical scenario or define a custom estimate based on your outlook."
-        )
-    )
-
-    if inflation_option == "Custom":
-        inflation_rate = st.slider(
-            "Custom Inflation Rate (%)",
-            min_value=0.0,
-            max_value=10.0,
-            value=st.session_state.get("inflation_rate", 2.5),
-            step=0.1,
-            help=(
-                "Set your own estimate for the average yearly rise in prices—how much more expensive things will get annually. "
-                "Common long-term averages range between 2.0% and 3.0%. High inflation means your money must stretch further."
-            )
-        )
-    else:
-        inflation_rate = float(inflation_option.split("(")[-1].replace("%)", ""))
-    st.session_state["inflation_rate"] = inflation_rate
-
-    # Withdrawal Rate Scenario Picker
-    withdrawal_option = st.selectbox(
-        "📤 Withdrawal Scenario",
-        options=["Custom", "Conservative (3.0%)", "Moderate (3.5%)", "Aggressive (4.0%)"],
-        index=1,
-        help=(
-            "This is the safe percentage of your portfolio you plan to withdraw each year in retirement. "
-            "Lower rates are more conservative and aim to protect against running out of money; higher rates assume shorter retirements or higher risk tolerance. "
-            "This rate defines how big your FIRE nest egg needs to be."
-        )
-    )
-
-    if withdrawal_option == "Custom":
-        withdrawal_rate = st.slider(
-            "Custom Withdrawal Rate (%)",
-            min_value=0.0,
-            max_value=10.0,
-            value=st.session_state.get("withdrawal_rate", 3.5),
-            step=0.1,
-            help=(
-                "Manually set your expected annual withdrawal rate from your retirement portfolio. "
-                "Commonly suggested rates range from 3.0% to 4.0%. Lower rates offer safety and longevity—higher rates assume faster drawdown or aggressive planning."
-            )
-        )
-    else:
-        withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
-    st.session_state["withdrawal_rate"] = withdrawal_rate
-
-    adjust_fire_expenses_for_inflation = st.checkbox(
+adjust_fire_expenses_for_inflation = st.checkbox(
     "📈 Adjust FIRE Spending for Inflation",
-    value=True,
-    help="If checked, your annual FIRE spending target will grow each year with inflation."
+    value=st.session_state.get("adjust_fire_expenses_for_inflation", True)
 )
+st.session_state["adjust_fire_expenses_for_inflation"] = adjust_fire_expenses_for_inflation
 
+# --- CONVERSION ---
+inflation_rate /= 100
 
-# Already assigned above during input block
-inflation_rate = inflation_rate / 100 # convert to decimal
-withdrawal_rate = withdrawal_rate / 100 # convert to decimal
+# --- CALCULATION BLOCK ---
+if st.button("🔥 Calculate Years to FIRE"):
 
-# Calculation trigger
-if st.button("Calculate My FIRE Path"):
+    # Initial approximation (without inflation)
+    fire_goal_base = calculate_fire_number(fire_expenses, withdrawal_rate)
+    years_to_fi, _, _ = estimate_years_to_fi(current_net_worth, annual_savings, annual_return, fire_goal_base)
 
-    # ✅ Step 1: Temporarily estimate FIRE Goal using flat expenses
-    fire_goal_temp = calculate_fire_number(fire_expenses, withdrawal_rate)
-
-    # ✅ Step 2: Estimate years to FI with flat FIRE goal
-    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(
-        current_net_worth, annual_savings, annual_return, fire_goal_temp
-    )
-
-    # ✅ Step 3: Recalculate FIRE expense for retirement year based on inflation
-    if adjust_fire_expenses_for_inflation:
-        adjusted_expenses = fire_expenses * ((1 + inflation_rate) ** years_to_fi)
-    else:
-        adjusted_expenses = fire_expenses
-
-    # ✅ Step 4: Now calculate your final FIRE goal using adjusted expenses
+    # Now adjust for inflation if enabled
+    adjusted_expenses = fire_expenses * ((1 + inflation_rate) ** years_to_fi) if adjust_fire_expenses_for_inflation else fire_expenses
     fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
+    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(current_net_worth, annual_savings, annual_return, fire_goal)
 
-
-    fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
-    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(
-        current_net_worth, annual_savings, annual_return, fire_goal
-        )
-    import datetime
     this_year = datetime.datetime.now().year
     fire_year = this_year + years_to_fi
 
+    progress_pct = min(current_net_worth / fire_goal, 1.0)
 
-    st.subheader("🎯 Results Summary")
+    # ✅ Sync Outputs
+    st.session_state["fire_goal"] = fire_goal
+    st.session_state["adjusted_expenses"] = adjusted_expenses
+    st.session_state["years_to_fi"] = years_to_fi
+    st.session_state["final_net_worth"] = final_net_worth
+    st.session_state["fire_year"] = fire_year
+    st.session_state["progress_pct"] = progress_pct
+    st.session_state["progress_basis"] = "Liquid" if not include_illiquid else "Total"
+    st.session_state["calculation_run"] = True
+
+    # Divider
+    st.markdown("<hr style='margin-top:20px; margin-bottom:20px;'>", unsafe_allow_html=True)
+    
+    if progress_pct >= 1.0:
+        headline = "🎉 FIRE Achieved · You’re Financially Independent!"
+    elif progress_pct >= 0.75:
+        headline = f"🔥 Nearly There · Freedom Awaits in {years_to_fi} Years"
+    elif progress_pct >= 0.5:
+        headline = f"⛽ Halfway to FIRE · {years_to_fi} Years to Go"
+    elif progress_pct >= 0.25:
+        headline = f"🚀 Early Progress · {years_to_fi} Years from Freedom"
+    else:
+        headline = f"✨ Just Getting Started · {years_to_fi} Years to FIRE"
+
+    st.markdown(f"""
+    <h3 style='margin-top:0; color:#4a6572; font-weight:600;'>
+    {headline}
+    </h3>
+    """, unsafe_allow_html=True)
+
+    st.subheader("🎯 FIRE Results Summary")
 
     st.markdown(f"""
     - **FIRE Goal:** ${fire_goal:,.0f}  
     - **Target FIRE Spending in Year {fire_year}:** ${adjusted_expenses:,.0f} {"(inflation-adjusted)" if adjust_fire_expenses_for_inflation else "(flat spending)"}  
-    - **Liquid Investable Assets:** ${liquid_assets:,.0f}  
-    - **Illiquid Assets (e.g. home equity):** ${illiquid_assets:,.0f}  
-    - **Total Net Worth:** ${total_net_worth:,.0f}  
-    - **Estimated Years to FI (based on liquid assets):** {years_to_fi}  
-    - **Projected Net Worth at FI:** ${final_net_worth:,.0f}
+    - **Liquid Investable Assets Today:** ${liquid_assets:,.0f}  
+    - **Illiquid Assets Today (e.g. home equity):** ${illiquid_assets:,.0f}  
+    - **Total Net Worth Today:** ${total_net_worth:,.0f}  
+    - **Estimated Years to FIRE (based on liquid assets):** {years_to_fi}  
+    - **Projected Net Worth at FIRE:** ${final_net_worth:,.0f}
     """)
 
+    st.subheader("🧭 How close are you to FIRE?")
+    
+    #st.progress(progress_pct, text=f"{progress_pct * 100:.1f}% of FIRE goal reached")
 
-    st.subheader("🧭 Progress Toward FIRE")
-
-    progress_pct = min(current_net_worth / fire_goal, 1.0)
     st.markdown(f"""
-    **Liquid FIRE Progress:** {progress_pct * 100:.1f}%  
-    **Total Net Worth:** ${total_net_worth:,.0f}  
-    """)
-    st.progress(progress_pct, text=f"{progress_pct * 100:.1f}% of FIRE goal reached")
+    <style>
+    .bar-container {{
+    position: relative;
+    background-color: #e0e0e0;
+    border-radius: 8px;
+    height: 24px;
+    width: 100%;
+    margin-top: 10px;
+    }}
 
-    st.subheader("📣 A Message for you")
+    .bar-fill {{
+    background-color: #4CAF50;
+    width: {progress_pct * 100}%;
+    height: 100%;
+    border-radius: 8px;
+    }}
 
-    if progress_pct >= 1.0:
-        st.success("🎉 Based on your liquid assets alone, you’ve reached your FIRE number! You’re financially independent—and your net worth is even higher when counting other assets.")
-    elif progress_pct >= 0.75:
-        st.info(f"You're {progress_pct * 100:.1f}% of the way to FIRE. So close you can smell the campfire on your freedom hikes. At this pace, you’ll get there in {years_to_fi} years.")
-    elif progress_pct >= 0.5:
-        st.info(f"Halfway there! You’ve built up {progress_pct * 100:.1f}% of your FIRE goal. Keep stacking—it’s all compounding from here. FIRE is {years_to_fi} years away.")
-    elif progress_pct >= 0.25:
-        st.info(f"You’re {progress_pct * 100:.1f}% of the way in. You’ve started something powerful—stay the course and your {years_to_fi}-year plan will pay off.")
-    else:
-        st.info(f"Every FIRE journey starts with that first spark. You’re {progress_pct * 100:.1f}% there. With your current pace, independence is on the horizon in about {years_to_fi} years.")
+    .current-marker {{
+    position: absolute;
+    top: -6px;
+    left: calc({progress_pct * 100}% - 10px);
+    font-size: 1.2em;
+    }}
+
+    .goal-marker {{
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    font-size: 1.2em;
+    opacity: 0.7;
+    }}
+    </style>
+
+    <div class="bar-container">
+    <div class="bar-fill"></div>
+    <div class="current-marker">🏃‍♂️‍➡️</div>
+    <div class="goal-marker">🎯</div>
+    </div>
+
+    <p style='margin-top:8px'><b>{progress_pct * 100:.1f}% of FIRE goal reached</b></p>
+    """, unsafe_allow_html=True)
+
+    # st.subheader("📣 A Message for you")
+
+    # if progress_pct >= 1.0:
+    #     st.success("🎉 Based on your liquid assets alone, you’ve reached your FIRE number! You’re financially independent—and your net worth is even higher when counting other assets.")
+    # elif progress_pct >= 0.75:
+    #     st.info(f"You're {progress_pct * 100:.1f}% of the way to FIRE. So close you can smell the campfire on your freedom hikes. At this pace, you’ll get there in {years_to_fi} years.")
+    # elif progress_pct >= 0.5:
+    #     st.info(f"Halfway there! You’ve built up {progress_pct * 100:.1f}% of your FIRE goal. Keep stacking—it’s all compounding from here. FIRE is {years_to_fi} years away.")
+    # elif progress_pct >= 0.25:
+    #     st.info(f"You’re {progress_pct * 100:.1f}% of the way in. You’ve started something powerful—stay the course and your {years_to_fi}-year plan will pay off.")
+    # else:
+    #     st.info(f"Every FIRE journey starts with that first spark. You’re {progress_pct * 100:.1f}% there. With your current pace, independence is on the horizon in about {years_to_fi} years.")
 
 
     st.subheader("📈 Net Worth Projection")
