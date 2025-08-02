@@ -2,7 +2,7 @@ import streamlit as st
 
 # Inflation Rate
 
-def inflation_picker(label="📉 Inflation Scenario"):
+def inflation_picker(label="📈 Inflation Scenario"):
     preset_map = {
         "Low (1.5%)": 1.5,
         "Average (2.5%)": 2.5,
@@ -151,7 +151,6 @@ def growth_picker(
     return growth_rate / 100, selected_option
 
 # Withdrawal Picker
-import streamlit as st
 
 def withdrawal_picker(default="Moderate (3.5%)", allow_custom=True):
     preset_map = {
@@ -193,3 +192,109 @@ def withdrawal_picker(default="Moderate (3.5%)", allow_custom=True):
         st.session_state["withdrawal_rate"] = withdrawal_rate
 
     return withdrawal_rate / 100, withdrawal_option
+
+# Rental growth/decline rate
+
+def rental_growth_picker(default="Moderate Growth (1.5%)", allow_custom=True):
+    """
+    Rental income growth scenario selector for FIRE planning tools.
+    Includes preset growth/decline scenarios and optional custom input.
+    Syncs selection and value to session state.
+    """
+    import streamlit as st
+
+    preset_map = {
+        "Decline (-2.0%)": -2.0,
+        "Flat (0.0%)": 0.0,
+        "Moderate Growth (1.5%)": 1.5,
+        "Aggressive Growth (5.0%)": 5.0
+    }
+
+    options = ["Custom"] + list(preset_map.keys()) if allow_custom else list(preset_map.keys())
+
+    # Get saved selections
+    current_option = st.session_state.get("rental_growth_option", default)
+    current_value = st.session_state.get("rental_growth_rate", preset_map.get(current_option, 2.0))
+
+    # Scenario selection
+    rental_growth_option = st.selectbox(
+        "🏘️ Rental Income Growth Scenario",
+        options=options,
+        index=options.index(current_option),
+        help="Expected annual change in rental income. Decline reflects shrinking rents, while growth boosts future FIRE contribution."
+    )
+    st.session_state["rental_growth_option"] = rental_growth_option
+
+    if rental_growth_option == "Custom":
+        _, input_col = st.columns([0.05, 0.95])
+        with input_col:
+            rental_growth_rate = st.number_input(
+                "↳ Custom Rental Growth Rate (%)",
+                min_value=-10.0,
+                max_value=10.0,
+                value=current_value,
+                step=0.1,
+                key="rental_growth_custom_input",
+                help="Set expected annual change in rental income. For example, -2.0 means declining rental returns over time."
+            )
+        st.session_state["rental_growth_rate"] = rental_growth_rate
+    else:
+        rental_growth_rate = preset_map[rental_growth_option]
+        st.session_state["rental_growth_rate"] = rental_growth_rate
+
+    return rental_growth_rate
+
+# Market Return Scenario Picker
+def equity_return_picker(default="Balanced (7.0%)", allow_custom=True):
+    """
+    Equity market return scenario picker.
+    Presets reflect asset-class-level returns.
+    Avoids session state conflicts with other pickers.
+    """
+
+    import streamlit as st
+
+    preset_map = {
+        "Negative (-10.0%)": -10.0,
+        "Flat (0%)": 0.0,
+        "Conservative (5.0%)": 5.0,
+        "Balanced (7.0%)": 7.0,
+        "Aggressive (10.0%)": 10.0,
+        "Super Growth (15.0%)": 15.0
+    }
+
+    options = ["Custom"] + list(preset_map.keys()) if allow_custom else list(preset_map.keys())
+
+    # Safely load equity-specific session state
+    current_option = st.session_state.get("equity_return_option", default)
+    current_value = st.session_state.get("equity_annual_return", preset_map.get(current_option, 7.0))
+
+    # Scenario selector
+    return_option = st.selectbox(
+        "📈 Equity Market Return Scenario",
+        options=options,
+        index=options.index(current_option),
+        help="Annualized expected return for the equity portion of your portfolio. Choose a preset or enter a custom rate."
+    )
+    st.session_state["equity_return_option"] = return_option
+
+    # Determine value from input or preset
+    if return_option == "Custom":
+        _, input_col = st.columns([0.05, 0.95])
+        with input_col:
+            annual_return = st.number_input(
+                "↳ Custom Equity Return (%)",
+                min_value=-50.0,
+                max_value=50.0,
+                value=current_value,
+                step=0.1,
+                key="equity_return_custom_input",
+                help="Specify expected annualized return for equities, accounting for volatility or bullish outlooks."
+            )
+        st.session_state["equity_annual_return"] = annual_return
+    else:
+        annual_return = preset_map[return_option]
+        st.session_state["equity_annual_return"] = annual_return
+
+    return annual_return, return_option
+

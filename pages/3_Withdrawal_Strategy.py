@@ -1,10 +1,14 @@
 import streamlit as st
 from navigation import studio_nav
-from utils_session import initialize_state
 import datetime
-
 this_year = datetime.datetime.now().year  # Needed for some default fields
+from session_defaults import DEFAULTS
+from utils_session import initialize_state_once
+initialize_state_once(DEFAULTS)  # ✅ now has the required argument
 
+def clear_session_state():
+    for key in st.session_state.keys():
+        del st.session_state[key]
 
 st.set_page_config(page_title="Withdrawal Designer", page_icon="📤")
 

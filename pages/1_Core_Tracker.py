@@ -43,14 +43,32 @@ Adjust your assumptions below and track your journey toward financial independen
 
 st.header("📥 Input Your Info")
 
+# Age input
+user_age = st.number_input(
+    "🎂 Your Age",
+    min_value=18,
+    max_value=100,
+    value=st.session_state.get("user_age", 35),
+    help="Your age helps calculate when you can access retirement accounts like 401(k) and IRA penalty-free."
+)
+st.session_state["user_age"] = user_age
+
 # Input fields
 liquid_assets = st.number_input(
     "💰 Liquid or Investable Assets ($)",
     value=st.session_state.get("liquid_assets", 100000),
     step=1000,
-    help="Include brokerage accounts, retirement accounts (401k, IRA), HSA, and cash savings."
+    help="Include cash, brokerage accounts, HSA, and any other liquid assets. Exclude retirement accounts like 401(k) and IRA."
 )
 st.session_state["liquid_assets"] = liquid_assets
+
+retirement_assets = st.number_input(
+    "💵 Retirement-Constrained Assets (401k, IRA, etc.) ($)",
+    value=st.session_state.get("retirement_assets", 400000),
+    step=1000,
+    help="Assets in accounts with age restrictions, like 401(k) and traditional IRAs."
+)
+st.session_state["retirement_assets"] = retirement_assets
 
 illiquid_assets = st.number_input(
     "🏠 Illiquid Assets (e.g. primary home equity) ($)",
@@ -59,6 +77,7 @@ illiquid_assets = st.number_input(
     help="Include equity in your primary home, private businesses, or non-liquid holdings."
 )
 st.session_state["illiquid_assets"] = illiquid_assets
+
 include_illiquid = st.checkbox("Include illiquid assets (e.g. home equity) in FIRE calculation?",
     value=st.session_state.get("include_illiquid", False))
 st.session_state["include_illiquid"] = include_illiquid
@@ -68,12 +87,12 @@ if include_illiquid:
 else:
     st.info("💰 *You're excluding illiquid assets for a conservative FIRE estimate based on accessible funds.*")
 
-# Net worth assignment (already handled)
+# Net worth assignment
+# Total accessible funds for early retirement
+early_access_assets = liquid_assets
+# Full net worth (includes restricted retirement accounts)
 current_net_worth = liquid_assets + illiquid_assets if include_illiquid else liquid_assets
-total_net_worth = liquid_assets + illiquid_assets
-
-# Add optional caption below inputs
-#st.caption("🔍 Not sure whether to include home equity in your FIRE calculation? Try toggling it on and off to see how it affects your timeline and progress. But note: real estate cash flow and appreciation are handled in a separate module.")
+total_net_worth = early_access_assets + retirement_assets + illiquid_assets
 
 # Annual Savings
 annual_savings = st.number_input(
@@ -122,24 +141,44 @@ st.session_state["adjust_fire_expenses_for_inflation"] = adjust_fire_expenses_fo
 # --- CONVERSION ---
 inflation_rate /= 100
 
+def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, adjusted_expenses, inflation_rate, access_age=59.5):
+    if user_age >= access_age:
+        return liquid_assets + retirement_assets, "✅ Retirement assets are fully accessible — no bridge strategy needed."
+    
+    years_until_access = max(0, access_age - user_age)
+    bridge_years = max(0, fire_year - (datetime.datetime.now().year + years_until_access))
+    bridge_buffer_needed = adjusted_expenses * bridge_years
+    if liquid_assets >= bridge_buffer_needed:
+        return liquid_assets + retirement_assets, "✅ Your liquid assets can cover the bridge period (the gap between retiring and accessing retirement funds)."
+    else:
+        return liquid_assets, "🚧 You don't yet have enough liquid assets to bridge the gap between retiring and accessing retirement funds. Retirement funds are excluded for now."
+
 # --- CALCULATION BLOCK ---
-if st.button("🔥 Calculate Years to FIRE"):
+if st.button("▶️ Calculate Years to FIRE"):
 
-    # Initial approximation (without inflation)
+    # Step 1: FIRE Goal (Base)
     fire_goal_base = calculate_fire_number(fire_expenses, withdrawal_rate)
-    years_to_fi, _, _ = estimate_years_to_fi(current_net_worth, annual_savings, annual_return, fire_goal_base)
-
-    # Now adjust for inflation if enabled
-    adjusted_expenses = fire_expenses * ((1 + inflation_rate) ** years_to_fi) if adjust_fire_expenses_for_inflation else fire_expenses
-    fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
-    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(current_net_worth, annual_savings, annual_return, fire_goal)
-
     this_year = datetime.datetime.now().year
+    retirement_accessible = user_age >= 59.5
+    temp_assets = liquid_assets + retirement_assets if retirement_accessible else liquid_assets
+
+    # Step 2: First Estimation — FIRE Year
+    temp_years_to_fi, _, _ = estimate_years_to_fi(temp_assets, annual_savings, annual_return, fire_goal_base)
+    fire_year = this_year + temp_years_to_fi
+
+    # Step 3: Inflation Adjustment
+    adjusted_expenses = fire_expenses * ((1 + inflation_rate) ** temp_years_to_fi) if adjust_fire_expenses_for_inflation else fire_expenses
+    fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
+
+    # Step 4: Get Effective FIRE Assets & Bridge Message
+    effective_fire_assets, bridge_message = get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, adjusted_expenses, inflation_rate)
+
+    # Step 5: Final Estimation
+    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(effective_fire_assets, annual_savings, annual_return, fire_goal)
     fire_year = this_year + years_to_fi
+    progress_pct = min(effective_fire_assets / fire_goal, 1.0)
 
-    progress_pct = min(current_net_worth / fire_goal, 1.0)
-
-    # ✅ Sync Outputs
+    # Step 6: Sync Outputs
     st.session_state["fire_goal"] = fire_goal
     st.session_state["adjusted_expenses"] = adjusted_expenses
     st.session_state["years_to_fi"] = years_to_fi
@@ -149,9 +188,10 @@ if st.button("🔥 Calculate Years to FIRE"):
     st.session_state["progress_basis"] = "Liquid" if not include_illiquid else "Total"
     st.session_state["calculation_run"] = True
 
-    # Divider
-    st.markdown("<hr style='margin-top:20px; margin-bottom:20px;'>", unsafe_allow_html=True)
-    
+    st.markdown("---")
+
+
+    # Step 7: Headline
     if progress_pct >= 1.0:
         headline = "🎉 FIRE Achieved · You’re Financially Independent!"
     elif progress_pct >= 0.75:
@@ -169,22 +209,7 @@ if st.button("🔥 Calculate Years to FIRE"):
     </h3>
     """, unsafe_allow_html=True)
 
-    st.subheader("🎯 FIRE Results Summary")
-
-    st.markdown(f"""
-    - **FIRE Goal:** ${fire_goal:,.0f}  
-    - **Target FIRE Spending in Year {fire_year}:** ${adjusted_expenses:,.0f} {"(inflation-adjusted)" if adjust_fire_expenses_for_inflation else "(flat spending)"}  
-    - **Liquid Investable Assets Today:** ${liquid_assets:,.0f}  
-    - **Illiquid Assets Today (e.g. home equity):** ${illiquid_assets:,.0f}  
-    - **Total Net Worth Today:** ${total_net_worth:,.0f}  
-    - **Estimated Years to FIRE (based on liquid assets):** {years_to_fi}  
-    - **Projected Net Worth at FIRE:** ${final_net_worth:,.0f}
-    """)
-
-    st.subheader("🧭 How close are you to FIRE?")
-    
-    #st.progress(progress_pct, text=f"{progress_pct * 100:.1f}% of FIRE goal reached")
-
+    # Step 8: Progress Bar
     st.markdown(f"""
     <style>
     .bar-container {{
@@ -228,8 +253,11 @@ if st.button("🔥 Calculate Years to FIRE"):
     <p style='margin-top:8px'><b>{progress_pct * 100:.1f}% of FIRE goal reached</b></p>
     """, unsafe_allow_html=True)
 
-    # st.subheader("📣 A Message for you")
+    st.success(bridge_message)
+    if "🚧" in bridge_message:
+        st.info("💡 To retire earlier, consider increasing liquid savings or exploring Roth IRA conversion ladders, SEPP withdrawals, or taxable asset growth.")
 
+    # st.subheader("📣 A Message for you")
     # if progress_pct >= 1.0:
     #     st.success("🎉 Based on your liquid assets alone, you’ve reached your FIRE number! You’re financially independent—and your net worth is even higher when counting other assets.")
     # elif progress_pct >= 0.75:
@@ -241,6 +269,18 @@ if st.button("🔥 Calculate Years to FIRE"):
     # else:
     #     st.info(f"Every FIRE journey starts with that first spark. You’re {progress_pct * 100:.1f}% there. With your current pace, independence is on the horizon in about {years_to_fi} years.")
 
+    st.subheader("🎯 FIRE Results Summary")
+
+    st.markdown(f"""
+    - **FIRE Goal:** ${fire_goal:,.0f}  
+    - **Target FIRE Spending in Year {fire_year}:** ${adjusted_expenses:,.0f} {"(inflation-adjusted)" if adjust_fire_expenses_for_inflation else "(flat spending)"}
+    - **Liquid Investable Assets Today (pre-tax + after-tax):** ${liquid_assets:,.0f}
+    - **Illiquid Assets Today (e.g. home equity):** ${illiquid_assets:,.0f}  
+    - **Total Net Worth Today:** ${total_net_worth:,.0f}  
+    - **Estimated Years to FIRE (based on accessible assets):** {years_to_fi}  
+        _(Note: Timeline may shift around key ages like 59½ or 60, when pre-tax assets become accessible)_
+    - **Projected Net Worth at FIRE:** ${final_net_worth:,.0f}
+    """)
 
     st.subheader("📈 Net Worth Projection")
 
@@ -328,11 +368,16 @@ if st.button("🔥 Calculate Years to FIRE"):
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("""
-    ⚠️ **Important note:**  
-    This tool assumes your retirement will span about 30 years, following standard safe withdrawal guidelines. 
-    If you expect a longer retirement (such as retiring in your 30s or 40s), you may need a higher FIRE Goal number. 
+    ⚠️ **Important note:** ⚠️
+                
+    This tool assumes your retirement will span ~30 years, following standard safe withdrawal guidelines.  
+    If you plan to retire in your 30s or 40s, you may need a higher FIRE Goal number to account for a longer horizon.  
+
+    Please note that retirement timelines may shift noticeably based on age and asset accessibility (e.g., pre-tax retirement funds). For example, users near 59–60 may see a significant timeline change due to gaining access to retirement accounts. Similarly, younger users may have comparable timelines if their savings rate and asset growth align with those nearing retirement.
+
     For deeper analysis, check out the Advanced Planner (coming soon).
     """)
+
 
     # Optional prompt to explore more tools
     #st.markdown("🏡 Want to model rental income or property appreciation? Try the **Real Estate Planner** in the sidebar.")

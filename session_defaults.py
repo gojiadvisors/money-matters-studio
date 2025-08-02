@@ -5,7 +5,9 @@ this_year = datetime.datetime.now().year
 
 DEFAULTS = {
     # FIRE Tracker
-    "liquid_assets": 100000,
+    "user_age": 35,
+    "liquid_assets": 300000,
+    "retirement_assets": 400000,
     "illiquid_assets": 0,
     "include_illiquid": False,
     "annual_savings": 30000,

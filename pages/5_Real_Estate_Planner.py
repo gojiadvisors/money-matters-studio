@@ -127,51 +127,9 @@ annual_rent = st.number_input(
 st.session_state["annual_rent"] = annual_rent
 
 # 📈 Rental Income Growth Scenario Picker
-growth_rate_from_session = st.session_state.get("rental_growth_rate", 1.5)
-
-# Dynamically determine dropdown index based on session value
-if growth_rate_from_session == 1.0:
-    default_index = 1
-elif growth_rate_from_session == 1.5:
-    default_index = 2
-elif growth_rate_from_session == 3.0:
-    default_index = 3
-else:
-    default_index = 0  # Custom
-
-rental_growth_option = st.selectbox(
-    "📈 Rental Income Growth Scenario",
-    options=[
-        "Custom",
-        "Low (1.0%)",
-        "Market Average (1.5%)",
-        "Aggressive (3.0%)"
-    ],
-    index=default_index,
-    help=(
-        "Pick a preset or choose 'Custom' to set your own annual rental growth rate. "
-        "This reflects how much you expect rents to increase year over year."
-    )
-)
-
-# Determine rental growth rate based on selection
-if rental_growth_option == "Custom":
-    rental_growth_rate = st.slider(
-        "Custom Rental Income Growth Rate (%)",
-        min_value=0.0,
-        max_value=10.0,
-        value=growth_rate_from_session,
-        step=0.1,
-        help=(
-            "Estimate how much your rental income will grow annually. "
-            "Even modest growth (1–2%) can significantly impact long-term FIRE contribution."
-        )
-    )
-else:
-    rental_growth_rate = float(rental_growth_option.split("(")[-1].replace("%)", ""))
-
-# Sync selected rate to session state
-st.session_state["rental_growth_rate"] = rental_growth_rate
+from shared_components import rental_growth_picker
+# Set the default selection and invoke the picker
+rental_growth_rate = rental_growth_picker(default="Moderate Growth (1.5%)")
 
 annual_expenses = st.number_input(
     "🧾 Annual Operating Expenses ($)",
@@ -246,31 +204,10 @@ with st.expander("🔧 Customize Your Assumptions", expanded=True):
     from shared_components import inflation_picker
     inflation_rate = inflation_picker()
 
-    # Withdrawal Presets
-    withdrawal_option = st.selectbox(
-        "📤 Withdrawal Scenario",
-        options=["Custom", "Conservative (3.0%)", "Moderate (3.5%)", "Aggressive (4.0%)"],
-        index=1,
-        help=(
-            "The percentage of your FIRE portfolio you plan to withdraw annually. "
-            "Lower values offer more safety; higher ones assume shorter time horizons or aggressive planning."
-        )
-    )
-
-    if withdrawal_option == "Custom":
-        withdrawal_rate = st.slider(
-            "Custom Withdrawal Rate (%)",
-            min_value=0.0,
-            max_value=10.0,
-            value=st.session_state.get("withdrawal_rate", 3.5),
-            step=0.1,
-            help=(
-                "Set your own expected withdrawal rate, used to calculate the size of your required portfolio."
-            )
-        )
-    else:
-        withdrawal_rate = float(withdrawal_option.split("(")[-1].replace("%)", ""))
-    st.session_state["withdrawal_rate"] = withdrawal_rate
+    # Withdrawl Scenario
+    from shared_components import withdrawal_picker
+    withdrawal_rate, withdrawal_scenario = withdrawal_picker()
+    #st.caption(f"📘 Using **{withdrawal_scenario}** scenario → {withdrawal_rate * 100:.2f}% withdrawal rate.")
 
 adjust_for_inflation = st.checkbox(
     "🪄 View All Outputs in Today's Dollars",
@@ -359,11 +296,11 @@ def project_cashflow(annual_rent, annual_expenses, rental_growth_rate, annual_de
 
 # --- Results Section ---
 
-if st.button("Run Property Model"):
+if st.button("▶️ Run Property Model"):
     st.session_state["run_model"] = True
 
 if st.session_state["run_model"]:
-    
+    st.markdown("---")
     # Your existing calculations and display code here
     inflation_factor = (1 + inflation_rate / 100) ** years_held
     loan_amount = purchase_price * (1 - down_payment_pct / 100)
@@ -429,6 +366,7 @@ if st.session_state["run_model"]:
 
     equity_label = "🏠 Real Equity Built" if adjust_for_inflation else "🏠 Equity Built"
     cashflow_label = "💵 Inflation-Adjusted Rental Income" if adjust_for_inflation else "💵 Rental Income"
+
 
     # --- FIRE-Focused Metrics ---
     col1, col2 = st.columns(2)
@@ -506,23 +444,6 @@ if st.session_state["run_model"]:
             )
             st.info(impact_msg)
 
-
-    if st.button("📤 Send Results to Investment Analyzer"):
-        st.session_state["re_sync"] = True
-        st.session_state["purchase_year"] = purchase_year
-        st.session_state["property_value"] = purchase_price
-        st.session_state["renovation_costs"] = renovation_costs
-        st.session_state["closing_costs"] = closing_costs
-        st.session_state["down_payment_pct"] = down_payment_pct
-        st.session_state["mortgage_years"] = loan_term
-        st.session_state["interest_rate"] = interest_rate
-        st.session_state["appreciation_rate"] = appreciation_rate
-        st.session_state["annual_rent"] = annual_rent
-        st.session_state["rental_growth_rate"] = rental_growth_rate
-        st.session_state["annual_expenses"] = annual_expenses
-        st.session_state["years_held"] = years_held
-        st.success("✅ Inputs synced to Investment Analyzer.")
-
     st.markdown("### 📈 Equity Growth Over Time")
 
     # Update the global session value if changed
@@ -554,8 +475,8 @@ if st.session_state["run_model"]:
     st.caption("📈 Property value builds slowly but steadily — this is your hidden wealth engine powering your FIRE path.")
 
     cf_df = pd.DataFrame({
-        "Year": [purchase_year + i for i in range(years_held)],
-        "Net Cash Flow": cashflow_list
+        "Year": [purchase_year - 1] + [purchase_year + i for i in range(years_held)],
+        "Net Cash Flow": [-property_initial_investment] + cashflow_list
     })
 
     year_1_cashflow = cashflow_list[0]
@@ -590,20 +511,22 @@ if st.session_state["run_model"]:
     )
 
     cf_fig.add_annotation(
-    xref="paper", yref="paper",
-    x=0, y=1.12,  # position above top-left corner
-    showarrow=False,
-    text=(
-        f"Year 1 Cash Flow: ${year_1_cashflow:,.0f} → "
-        f"Year {year_final_label}: ${year_final_cashflow:,.0f} "
-        f"({ 'inflation-adjusted' if adjust_for_inflation else 'nominal' })"
-    ),
-    font=dict(size=14),
-    align="left",
-    bgcolor="rgba(255,255,255,0.8)",
-    bordercolor="lightgray",
-    borderwidth=1,
-)
+        xref="paper", yref="paper",
+        x=0, y=1.12,
+        showarrow=False,
+        text=(
+            f"📉 Year 0 Investment: -${property_initial_investment:,.0f} → "
+            f"📈 Year 1 Cash Flow: ${year_1_cashflow:,.0f} → "
+            f"🏁 Year {year_final_label}: ${year_final_cashflow:,.0f} "
+            f"({ 'inflation-adjusted' if adjust_for_inflation else 'nominal' })"
+        ),
+        font=dict(size=14),
+        align="left",
+        bgcolor="rgba(255,255,255,0.85)",
+        bordercolor="lightgray",
+        borderwidth=1,
+    )
+
     st.plotly_chart(cf_fig, use_container_width=True)
     st.caption("📊 This chart shows how rental income, inflation, and fixed mortgage payments interact over time.")
 

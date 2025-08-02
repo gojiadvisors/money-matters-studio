@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy_financial as npf
 import pandas as pd
+import plotly.graph_objects as go
 import datetime
 this_year = datetime.datetime.now().year
 from session_defaults import DEFAULTS
@@ -53,6 +54,7 @@ purchase_year = st.number_input(
     step=1,
     help="The year you bought or expect to buy this property or make the fund investment."
 )
+st.session_state["purchase_year"] = purchase_year
 
 investment_years = st.slider(
     "📅 Investment Duration (Years)",
@@ -61,6 +63,7 @@ investment_years = st.slider(
     value=st.session_state.get("years_held", 15),
     help="How long you plan to hold this investment before selling or retiring."
 )
+st.session_state["years_held"] = investment_years
 
 st.markdown("### 📂 Input Assumptions for Both Investment Paths")
 st.warning(
@@ -121,6 +124,7 @@ with tab1:
             step=1.0,
             help="Portion paid upfront; the rest is financed through a loan."
         )
+        st.session_state["down_payment_pct"] = down_payment_pct
         initial_investment = property_value * (down_payment_pct / 100) + closing_costs + renovation_costs
 
         mortgage_years = st.number_input(
@@ -131,6 +135,7 @@ with tab1:
             step=1,
             help="Length of your mortgage, typically 15–30 years."
         )
+        st.session_state["mortgage_years"] = mortgage_years
 
         mortgage_rate = st.number_input(
             "📈 Mortgage Interest Rate (%)",
@@ -140,6 +145,8 @@ with tab1:
             step=0.1,
             help="Annual interest rate charged on the loan."
         )
+        st.session_state["interest_rate"] = mortgage_rate
+
     
     # -- Performance Assumptions --
     appreciation_rate = st.number_input(
@@ -149,6 +156,7 @@ with tab1:
         step=0.1,
         help="Expected annual increase in property value, compounded yearly (e.g. 3 means ~3% growth per year)."
     )
+    st.session_state["appreciation_rate"] = appreciation_rate
 
     annual_rent = st.number_input(
         "🏡 Annual Rental Income ($)",
@@ -157,53 +165,12 @@ with tab1:
         step=1000,
         help="Gross rent expected from tenants in one year — before expenses or vacancy adjustments."
     )
+    st.session_state["annual_rent"] = annual_rent
 
     # 📈 Rental Income Growth Scenario Picker
-    growth_rate_from_session = st.session_state.get("rental_growth_rate", 1.5)
-
-    # Dynamically determine default index based on session value
-    if growth_rate_from_session == 1.0:
-        default_index = 1
-    elif growth_rate_from_session == 1.5:
-        default_index = 2
-    elif growth_rate_from_session == 3.0:
-        default_index = 3
-    else:
-        default_index = 0  # Custom
-
-    rental_growth_option = st.selectbox(
-        "📈 Rental Income Growth Scenario",
-        options=[
-            "Custom",
-            "Low (1.0%)",
-            "Market Average (1.5%)",
-            "Aggressive (3.0%)"
-        ],
-        index=default_index,
-        help=(
-            "Pick a preset or choose 'Custom' to set your own annual rental growth rate. "
-            "This reflects how much you expect rents to increase year over year."
-        )
-    )
-
-    # Capture input based on selected option
-    if rental_growth_option == "Custom":
-        rental_growth_rate = st.slider(
-            "Custom Rental Income Growth Rate (%)",
-            min_value=0.0,
-            max_value=10.0,
-            value=growth_rate_from_session,
-            step=0.1,
-            help=(
-                "Estimate how much your rental income will grow annually. "
-                "Even modest growth (1–2%) can significantly impact long-term FIRE contribution."
-            )
-        )
-    else:
-        rental_growth_rate = float(rental_growth_option.split("(")[-1].replace("%)", ""))
-
-    # Sync back to session
-    st.session_state["rental_growth_rate"] = rental_growth_rate
+    from shared_components import rental_growth_picker
+    # Set the default selection and invoke the picker
+    rental_growth_rate = rental_growth_picker(default="Moderate Growth (1.5%)")
 
     annual_expenses = st.number_input(
     "🧾 Annual Operating Expenses ($)",
@@ -212,6 +179,8 @@ with tab1:
     step=500,
     help="Total costs per year including tax, maintenance, insurance, and management."
 )
+    st.session_state["annual_expenses"] = annual_expenses
+
     
     st.markdown(
     f"""
@@ -240,9 +209,7 @@ with tab1:
     # Inflation Input from Shared Component
     from shared_components import inflation_picker
     inflation_rate = inflation_picker()
-
-    st.caption(f"📘 We'll adjust values for inflation using an estimated {inflation_rate:.1f}% annually.")
-
+    #st.caption(f"📘 We'll adjust values for inflation using an estimated {inflation_rate:.1f}% annually.")
 
 with tab2:
     st.subheader("📈 Stock Market Scenario")
@@ -260,36 +227,8 @@ with tab2:
         )
 
     # 📈 Market Return Scenario Picker
-    market_return_option = st.selectbox(
-        "📈 Annual Market Return Scenario",
-        options=[
-            "Custom",
-            "Negative (-10.0%)",
-            "Flat (0%)",
-            "Conservative (5.0%)",
-            "Balanced (7.0%)",
-            "Aggressive (10.0%)",
-            "Super Growth (15.0%)"
-        ],
-        index=4,
-        help=(
-            "Pick a preset or choose 'Custom' to set your own expected annual market return. "
-            "This reflects portfolio growth from appreciation and compounding."
-        )
-    )
-
-    if market_return_option == "Custom":
-        annual_return = st.slider(
-            "Custom Annual Return (%)",
-            min_value=-50.0,
-            max_value=50.0,
-            value=st.session_state.get("annual_return", 7.0),
-            step=0.1,
-            help="Estimate how much your portfolio will grow annually, on average."
-        )
-    else:
-        annual_return = float(market_return_option.split("(")[-1].replace("%)", ""))
-    st.session_state["annual_return"] = annual_return
+    from shared_components import equity_return_picker
+    equity_return, equity_label = equity_return_picker()
 
     # 💸 Dividend Scenario Picker
     dividend_option = st.selectbox(
@@ -370,7 +309,7 @@ def simulate_real_estate_fire_contribution(
     return fire_contribution, equity_records, cashflow_records
 
 def simulate_equity(
-    initial_investment, years, annual_return, dividend_yield, reinvest_dividends, inflation_rate=0.0, adjust_for_inflation=False
+    initial_investment, years, equity_return, dividend_yield, reinvest_dividends, inflation_rate=0.0, adjust_for_inflation=False
 ):
     portfolio_value = initial_investment
     dividends_total = 0
@@ -383,7 +322,7 @@ def simulate_equity(
         else:
             dividends_total += dividends
 
-        portfolio_value *= (1 + annual_return / 100)
+        portfolio_value *= (1 + equity_return / 100)
 
         # Adjust this year’s values if inflation toggle is on
         if adjust_for_inflation:
@@ -471,6 +410,8 @@ def project_cashflow(annual_rent, annual_expenses, rental_growth_rate, annual_de
 
 # Add run trigger
 if st.button("▶️ Run Investment Analyzer"):
+    
+    st.markdown("---")
 
     # --- Run Simulations ---
 
@@ -496,7 +437,7 @@ if st.button("▶️ Run Investment Analyzer"):
     eq_contribution, eq_history = simulate_equity(
         index_investment,
         investment_years,
-        annual_return,
+        equity_return,
         dividend_yield,
         reinvest_dividends,
         inflation_rate,
@@ -570,6 +511,98 @@ if st.button("▶️ Run Investment Analyzer"):
             f"{index_fund_roi:.2f}x",
             help="Growth of your index portfolio compared to initial investment over the same time horizon."
         )
+
+    # Strategy Comparison Chart
+
+    st.markdown("### 🔍 Visual Comparison of Cumulative FIRE Contributions")
+
+    comparison_fig = go.Figure()
+
+    comparison_fig.add_trace(go.Scatter(
+        x=fire_df["Year"],
+        y=fire_df["Real Estate (Cumulative)"],
+        mode="lines+markers",
+        name="Real Estate",
+        line=dict(color="goldenrod"),
+        hovertemplate="Real Estate: $%{y:,.0f}<br>Year %{x}"
+    ))
+
+    comparison_fig.add_trace(go.Scatter(
+        x=fire_df["Year"],
+        y=fire_df["Index Fund (Cumulative)"],
+        mode="lines+markers",
+        name="Index Fund",
+        line=dict(color="green", dash="dot"),
+        hovertemplate="Index Fund: $%{y:,.0f}<br>Year %{x}"
+    ))
+
+    comparison_fig.update_layout(
+        template="plotly_white",
+        xaxis_title="Year",
+        yaxis_title="Cumulative Value ($)",
+        title="📈 FIRE Path Comparison Over Time",
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5),
+        margin=dict(t=60, b=100)
+    )
+
+
+    # Initialize breakeven year
+    breakeven_year = None
+
+    for i in range(len(fire_df)):
+        re_value = fire_df["Real Estate (Cumulative)"].iloc[i]
+        eq_value = fire_df["Index Fund (Cumulative)"].iloc[i]
+        if re_value > eq_value:
+            breakeven_year = fire_df["Year"].iloc[i]
+            break
+
+    if breakeven_year:
+        comparison_fig.add_annotation(
+            x=breakeven_year,
+            y=fire_df.loc[fire_df["Year"] == breakeven_year, "Real Estate (Cumulative)"].values[0],
+            text=f"🏁 Breakeven in {breakeven_year}",
+            showarrow=True,
+            arrowhead=2,
+            ax=40,
+            ay=-40,
+            bgcolor="lightyellow",
+            bordercolor="darkgoldenrod",
+            font=dict(size=12)
+        )
+    else:
+        comparison_fig.add_annotation(
+            xref="paper", yref="paper",
+            x=0.99, y=1.15,
+            showarrow=False,
+            text="⚠️ No breakeven: Index Fund leads throughout",
+            font=dict(size=13),
+            bgcolor="lightgreen",
+            bordercolor="darkgreen"
+        )
+
+    final_year = fire_df["Year"].iloc[-1]
+    final_re = fire_df["Real Estate (Cumulative)"].iloc[-1]
+    final_eq = fire_df["Index Fund (Cumulative)"].iloc[-1]
+
+    winner_text = (
+        "🏆 Real Estate wins long-term" if final_re > final_eq
+        else "🏆 Index Fund wins long-term" if final_eq > final_re
+        else "⚖️ Both strategies finish evenly"
+    )
+
+    comparison_fig.add_annotation(
+        x=final_year,
+        y=max(final_re, final_eq),
+        text=winner_text,
+        showarrow=False,
+        font=dict(size=14, color="black"),
+        bgcolor="lightgray",
+        bordercolor="gray"
+    )
+
+
+    st.plotly_chart(comparison_fig, use_container_width=True)
+    st.caption("🏁 Track how each strategy contributes to your financial independence year by year — with upfront investments reflected in Year 0.")
 
 
     # YoY Table

@@ -18,23 +18,24 @@ st.caption("*FIRE = Financial Independence - Retire Early")
 
 st.markdown("""
 
-| 🔧 Tool | 💡 What It Does | 🔗 Integration Status | 🚦 Status |
-|--------|------------------|------------------------|------------|
-| [🔥 **FIRE Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate time to FIRE from savings, expenses, and returns | 🔜 Will integrate with Advanced Planner | ✅ Live |
-| 🎒 **Lifestyle Budgeter** | Build your ideal FIRE lifestyle and optimize spending | 🔄 Helps define FIRE goal | 🛠️ Coming Soon |
-| 📤 **Withdrawal Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | 🔄 Uses FIRE Tracker results | 🛠️ Coming Soon |
+| 🔧 Tool | 💡 What It Does | 🚦 Status |
+|--------|------------------|------------|
+| [🔥 **FIRE Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate time to FIRE from savings, expenses, and returns | ✅ Live |
+| 🎒 **Lifestyle Budgeter** | Build your ideal FIRE lifestyle and optimize spending | 🛠️ Coming Soon |
+| 📤 **Withdrawal Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | 🛠️ Coming Soon |
 
 ---
 
 ### 🏗️ Advanced Planning Tools
 
-| 🛠️ Tool | 📈 What It Models | 🔗 Integration Status | 🚦 Status |
-|--------|-------------------|------------------------|------------|
-| [🏘️ **Real Estate Planner**](https://money-matters-studio.streamlit.app/Real_Estate_Planner) | Rental income, appreciation, and mortgage payoff over time | ✅ Feeds into Investment Comparison & Advanced Planner | ✅ Live |
-| [📊 **Investment Analyzer**](https://money-matters-studio.streamlit.app/Investment_Analyzer) | Compare real estate and stock market strategies using synced assumptions | ✅ Syncs with Real Estate Planner | 🧪 Beta |
-| 🧠 **Advanced FIRE Planner** | Combine real estate, side income, and equity events for a tailored path | ✅ Synthesizes all tools | 🛠️ Coming Soon |
+| 🛠️ Tool | 📈 What It Models | 🚦 Status |
+|--------|-------------------|------------|
+| [🏘️ **Real Estate Planner**](https://money-matters-studio.streamlit.app/Real_Estate_Planner) | Rental income, appreciation, and mortgage payoff over time | ✅ Live |
+| [📊 **Investment Analyzer**](https://money-matters-studio.streamlit.app/Investment_Analyzer) | Compare real estate and stock market strategies using synced assumptions | 🧪 Beta |
+| 🧠 **Advanced FIRE Planner** | Combine real estate, side income, and equity events for a tailored path | 🛠️ Coming Soon |
 
 """)
+
 
 st.caption("✨ More modules coming soon!")
 #st.caption("📎 This table will grow as your toolkit evolves. Real estate support is modular by design - use only what fits your FIRE journey.")
