@@ -514,8 +514,9 @@ if st.button("▶️ Run Investment Analyzer"):
 
     # Strategy Comparison Chart
 
+    #
     #st.markdown("### 🔍 Visual Comparison of Cumulative FIRE Contributions")
-    st.subheader("📊 Year-by-Year FIRE Contributions")
+    #st.subheader("📊 Year-by-Year FIRE Contributions")
 
     comparison_fig = go.Figure()
 
