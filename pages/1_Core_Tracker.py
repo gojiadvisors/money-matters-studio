@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import streamlit as st
 from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
+import pandas as pd
 import datetime
 this_year = datetime.datetime.now().year
 from session_defaults import DEFAULTS
@@ -32,14 +33,15 @@ with st.expander("💡 What Is FIRE and How Does This Tool Help?", expanded=Fals
         unsafe_allow_html=True
     )
     st.markdown("""
-### What You’ll See:
-- **Your FIRE Goal Number**: How much you need to achieve freedom
-- **Time to FIRE**: Estimated years until you reach your goal
-- **Growth Path**: Year-by-year net worth projections
-- **Personalized Feedback**: Actionable insights based on your inputs
 
 Adjust your assumptions below and track your journey toward financial independence.
     """)
+
+# ### What You’ll See:
+# - **Your FIRE Goal Number**: How much you need to achieve freedom
+# - **Time to FIRE**: Estimated years until you reach your goal
+# - **Growth Path**: Year-by-year net worth projections
+# - **Personalized Feedback**: Actionable insights based on your inputs
 
 st.header("📥 Input Your Info")
 
@@ -141,17 +143,46 @@ st.session_state["adjust_fire_expenses_for_inflation"] = adjust_fire_expenses_fo
 # --- CONVERSION ---
 inflation_rate /= 100
 
-def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, adjusted_expenses, inflation_rate, access_age=59.5):
-    if user_age >= access_age:
-        return liquid_assets + retirement_assets, "✅ Retirement assets are fully accessible — no bridge strategy needed."
-    
-    years_until_access = max(0, access_age - user_age)
-    bridge_years = max(0, fire_year - (datetime.datetime.now().year + years_until_access))
-    bridge_buffer_needed = adjusted_expenses * bridge_years
-    if liquid_assets >= bridge_buffer_needed:
-        return liquid_assets + retirement_assets, "✅ Your liquid assets can cover the bridge period (the gap between retiring and accessing retirement funds)."
+def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, access_age=59.5):
+    import datetime
+
+    current_year = datetime.datetime.now().year
+    access_year = current_year + int(access_age - user_age)
+
+    if fire_year >= access_year:
+        return (
+            liquid_assets + retirement_assets,
+            "✅ Retirement assets will be fully accessible at FIRE year.",
+            {
+                "bridge_years": 0,
+                "reduction_factor": 1.0,
+                "needs_bridge_strategy": False
+            }
+        )
     else:
-        return liquid_assets, "🚧 You don't yet have enough liquid assets to bridge the gap between retiring and accessing retirement funds. Retirement funds are excluded for now."
+        years_to_access = access_year - fire_year
+        reduction_factor = max(0, 1 - (years_to_access / 10))
+        partial_access = retirement_assets * reduction_factor
+        total_assets = liquid_assets + partial_access
+
+        if retirement_assets > 0:
+            message = (
+                f"🚧 You will reach FIRE {years_to_access} years before you can fully access retirement accounts. "
+                f"We estimate you'll be able to tap into about {reduction_factor:.0%} of those assets during this early phase."
+            )
+        else:
+            message = (
+                f"🚧 You will reach FIRE {years_to_access} years before traditional retirement age, but since you've allocated $0 to retirement-restricted accounts, there's no early access needed."
+            )
+
+        bridge_info = {
+            "bridge_years": years_to_access,
+            "reduction_factor": reduction_factor,
+            "needs_bridge_strategy": True
+        }
+
+        return total_assets, message, bridge_info
+
 
 # --- CALCULATION BLOCK ---
 if st.button("▶️ Calculate Years to FIRE"):
@@ -159,11 +190,19 @@ if st.button("▶️ Calculate Years to FIRE"):
     # Step 1: FIRE Goal (Base)
     fire_goal_base = calculate_fire_number(fire_expenses, withdrawal_rate)
     this_year = datetime.datetime.now().year
-    retirement_accessible = user_age >= 59.5
-    temp_assets = liquid_assets + retirement_assets if retirement_accessible else liquid_assets
+    retirement_accessible = float(user_age) >= 59.5
+
+    # Step 1.5: Get effective assets before estimation
+    adjusted_expenses = fire_expenses * ((1 + inflation_rate) ** 1) if adjust_fire_expenses_for_inflation else fire_expenses  # Temporary 1-year inflation buffer for first pass
+    fire_goal_base = calculate_fire_number(adjusted_expenses, withdrawal_rate)
+    fire_year_guess = this_year + 1  # Temporary guess for bridge years
+
+    effective_fire_assets, _, _ = get_effective_assets(
+        user_age, liquid_assets, retirement_assets, fire_year_guess
+    )
 
     # Step 2: First Estimation — FIRE Year
-    temp_years_to_fi, _, _ = estimate_years_to_fi(temp_assets, annual_savings, annual_return, fire_goal_base)
+    temp_years_to_fi, _, _ = estimate_years_to_fi(effective_fire_assets, annual_savings, annual_return, fire_goal_base)
     fire_year = this_year + temp_years_to_fi
 
     # Step 3: Inflation Adjustment
@@ -171,11 +210,16 @@ if st.button("▶️ Calculate Years to FIRE"):
     fire_goal = calculate_fire_number(adjusted_expenses, withdrawal_rate)
 
     # Step 4: Get Effective FIRE Assets & Bridge Message
-    effective_fire_assets, bridge_message = get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, adjusted_expenses, inflation_rate)
+    effective_fire_assets, bridge_message, bridge_info = get_effective_assets(
+        user_age, liquid_assets, retirement_assets, fire_year
+    )
 
     # Step 5: Final Estimation
-    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(effective_fire_assets, annual_savings, annual_return, fire_goal)
+    years_to_fi, final_net_worth, net_worth_history = estimate_years_to_fi(
+    effective_fire_assets, annual_savings, annual_return, fire_goal
+    )
     fire_year = this_year + years_to_fi
+    fire_age = user_age + years_to_fi
     progress_pct = min(effective_fire_assets / fire_goal, 1.0)
 
     # Step 6: Sync Outputs
@@ -184,12 +228,12 @@ if st.button("▶️ Calculate Years to FIRE"):
     st.session_state["years_to_fi"] = years_to_fi
     st.session_state["final_net_worth"] = final_net_worth
     st.session_state["fire_year"] = fire_year
+    st.session_state["fire_age"] = fire_age
     st.session_state["progress_pct"] = progress_pct
     st.session_state["progress_basis"] = "Liquid" if not include_illiquid else "Total"
     st.session_state["calculation_run"] = True
 
     st.markdown("---")
-
 
     # Step 7: Headline
     if progress_pct >= 1.0:
@@ -250,132 +294,121 @@ if st.button("▶️ Calculate Years to FIRE"):
     <div class="goal-marker">🎯</div>
     </div>
 
-    <p style='margin-top:8px'><b>{progress_pct * 100:.1f}% of FIRE goal reached</b></p>
+    <p style='margin-top:8px'><b>{progress_pct * 100:.1f}% of your FIRE journey completed (measured by assets accumulated toward your goal)</b></p>
     """, unsafe_allow_html=True)
 
-    st.success(bridge_message)
-    if "🚧" in bridge_message:
-        st.info("💡 To retire earlier, consider increasing liquid savings or exploring Roth IRA conversion ladders, SEPP withdrawals, or taxable asset growth.")
-
-    # st.subheader("📣 A Message for you")
-    # if progress_pct >= 1.0:
-    #     st.success("🎉 Based on your liquid assets alone, you’ve reached your FIRE number! You’re financially independent—and your net worth is even higher when counting other assets.")
-    # elif progress_pct >= 0.75:
-    #     st.info(f"You're {progress_pct * 100:.1f}% of the way to FIRE. So close you can smell the campfire on your freedom hikes. At this pace, you’ll get there in {years_to_fi} years.")
-    # elif progress_pct >= 0.5:
-    #     st.info(f"Halfway there! You’ve built up {progress_pct * 100:.1f}% of your FIRE goal. Keep stacking—it’s all compounding from here. FIRE is {years_to_fi} years away.")
-    # elif progress_pct >= 0.25:
-    #     st.info(f"You’re {progress_pct * 100:.1f}% of the way in. You’ve started something powerful—stay the course and your {years_to_fi}-year plan will pay off.")
-    # else:
-    #     st.info(f"Every FIRE journey starts with that first spark. You’re {progress_pct * 100:.1f}% there. With your current pace, independence is on the horizon in about {years_to_fi} years.")
-
-    st.subheader("🎯 FIRE Results Summary")
-
     st.markdown(f"""
-    - **FIRE Goal:** ${fire_goal:,.0f}  
-    - **Target FIRE Spending in Year {fire_year}:** ${adjusted_expenses:,.0f} {"(inflation-adjusted)" if adjust_fire_expenses_for_inflation else "(flat spending)"}
-    - **Liquid Investable Assets Today (pre-tax + after-tax):** ${liquid_assets:,.0f}
-    - **Illiquid Assets Today (e.g. home equity):** ${illiquid_assets:,.0f}  
-    - **Total Net Worth Today:** ${total_net_worth:,.0f}  
-    - **Estimated Years to FIRE (based on accessible assets):** {years_to_fi}  
-        _(Note: Timeline may shift around key ages like 59½ or 60, when pre-tax assets become accessible)_
-    - **Projected Net Worth at FIRE:** ${final_net_worth:,.0f}
+    ### 🎯 Your FIRE Summary
+
+    | 🎯 Milestone | 💰 Result | 🧭 What It Means for You |
+    |----------------|-------------------|------------------|
+    | **FIRE Goal ($)** | ${fire_goal:,.0f} | Total amount you need to retire comfortably |
+    | **FIRE Year** | In {years_to_fi} years | Time until you reach financial independence |
+    | **FIRE Age** | At Age {fire_age} ({fire_year})| When you expect to reach financial independence |
+    | **Target FIRE Spending** | ${adjusted_expenses:,.0f} | Annual expenses starting in {fire_year} |
+    | **Net Worth at FIRE** | ${final_net_worth:,.0f} | Projected total assets by the time you reach financial independence |
+    | **Net Worth Today** | ${total_net_worth:,.0f} | Combined value of all assets today |
     """)
+    
+    st.success(bridge_message)
+    if "🚧" in bridge_message and retirement_assets > 0 and progress_pct < 1.0:
+        st.info("💡 To retire earlier, consider increasing liquid savings or exploring Roth IRA conversion ladders, SEPP withdrawals, or taxable asset growth. Find out more in the Advanced Planner (coming soon).")
 
-    st.subheader("📈 Net Worth Projection")
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-    x=list(range(len(net_worth_history))),
-    y=net_worth_history,
-    mode='lines+markers',
-    fill='tozeroy',
-    name='Net Worth'
-))
+# Net worth chart
 
     import datetime
     this_year = datetime.datetime.now().year
+    year_list = [this_year + i for i in range(len(net_worth_history))]
     fire_year = this_year + years_to_fi
 
-    # 📍 Add marker for Year 0 ("Today")
+    fig = go.Figure()
+
+    # Main Net Worth Line
+    fig.add_trace(go.Scatter(
+        x=year_list,
+        y=net_worth_history,
+        mode='lines+markers',
+        fill='tozeroy',
+        name='Net Worth'
+    ))
+
+    # 📍 "Today" marker
     fig.add_vline(
-    x=0,
-    line_dash="dot",
-    line_color="#999999",
-    line_width=2,
-    annotation_text=f"📍 You are here ({this_year})",
-    annotation_position="top left",
-    annotation_font_size=12,
-    annotation_font_color="#555",
-    annotation_bgcolor="#f2f2f2"
-)
+        x=this_year,
+        line_dash="dot",
+        line_color="#999999",
+        line_width=2,
+        annotation_text=f"📍 You are here ({this_year})",
+        annotation_position="top left",
+        annotation_font_size=12,
+        annotation_font_color="#555",
+        annotation_bgcolor="#f2f2f2"
+    )
 
-    # Add FIRE goal line
+    # 🎯 FIRE goal line
     fig.add_shape(
-    type="line",
-    x0=0,
-    x1=len(net_worth_history),
-    y0=fire_goal,
-    y1=fire_goal,
-    line=dict(color="green", width=2, dash="dash"),
-)
+        type="line",
+        x0=year_list[0],
+        x1=year_list[-1],
+        y0=fire_goal,
+        y1=fire_goal,
+        line=dict(color="green", width=2, dash="dash"),
+    )
 
-    # Add annotation
     fig.add_annotation(
-    x=years_to_fi,
-    y=fire_goal,
-    text=f"🎯 FIRE Target ({fire_year})",
-    showarrow=True,
-    arrowhead=1,
-    ax=0,
-    ay=-40,
-    font=dict(size=12),
-    bgcolor="#e6ffe6",
-    bordercolor="green",
-    borderwidth=1
-)
+        x=fire_year,
+        y=fire_goal,
+        text=f"🎯 FIRE Target ({fire_year})",
+        showarrow=True,
+        arrowhead=1,
+        ax=0,
+        ay=-40,
+        font=dict(size=12),
+        bgcolor="#e6ffe6",
+        bordercolor="green",
+        borderwidth=1
+    )
 
-    # Pre-FIRE zone
+    # 🟠 Pre-FIRE zone shading
     fig.add_vrect(
-    x0=0,
-    x1=years_to_fi,
-    fillcolor="rgba(255,165,0,0.05)",  # faint orange
-    layer="below",
-    line_width=0
-)
+        x0=this_year,
+        x1=fire_year,
+        fillcolor="rgba(255,165,0,0.05)",  # faint orange
+        layer="below",
+        line_width=0
+    )
 
-# Optional: Add annotation
     fig.add_annotation(
-    x=years_to_fi / 2,
-    y=max(net_worth_history)*0.95,
-    text="Pre-FIRE accumulation phase",
-    showarrow=False,
-    font=dict(size=11, color="#555"),
-    bgcolor="#fff8e5",
-    bordercolor="#ffcc66",
-    borderwidth=1
-)
+        x=this_year + (fire_year - this_year) / 2,
+        y=max(net_worth_history)*0.95,
+        text="Pre-FIRE accumulation phase",
+        showarrow=False,
+        font=dict(size=11, color="#555"),
+        bgcolor="#fff8e5",
+        bordercolor="#ffcc66",
+        borderwidth=1
+    )
 
-
+    # Final layout
     fig.update_layout(
-    title="Net Worth Projection Over Time",
-    xaxis_title="Years from Today",
-    yaxis_title="Projected Net Worth",
-    template="plotly_white",
-    showlegend=False
-)
+        title="📈 Net Worth Projection Over Time",
+        xaxis_title="Calendar Year",
+        yaxis_title="Projected Net Worth",
+        template="plotly_white",
+        showlegend=False
+    )
 
     st.plotly_chart(fig, use_container_width=True)
 
+
     st.markdown("""
-    ⚠️ **Important note:** ⚠️
-                
-    This tool assumes your retirement will span ~30 years, following standard safe withdrawal guidelines.  
-    If you plan to retire in your 30s or 40s, you may need a higher FIRE Goal number to account for a longer horizon.  
+    ⚠️ **Note:** This tool uses a phased drawdown strategy to reflect how asset accessibility changes across retirement stages, assuming ~30 years of withdrawals.
 
-    Please note that retirement timelines may shift noticeably based on age and asset accessibility (e.g., pre-tax retirement funds). For example, users near 59–60 may see a significant timeline change due to gaining access to retirement accounts. Similarly, younger users may have comparable timelines if their savings rate and asset growth align with those nearing retirement.
+    - Retiring in your 30s or 40s? You may need a higher FIRE number to support a longer lifespan.
+    - Limited access to pre-tax accounts (401(k), IRA) before age ~59 can shift your timeline.
+    - Strong savings and growth can produce similar timelines across different life stages.
 
-    For deeper analysis, check out the Advanced Planner (coming soon).
+    Want to go deeper into withdrawal strategies and tax planning? The **Advanced Planner** is on the way.
     """)
 
 

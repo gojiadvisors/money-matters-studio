@@ -481,39 +481,65 @@ if st.button("▶️ Run Investment Analyzer"):
 
     fire_df = pd.DataFrame(fire_yearly)
 
-    # Display Results side by side
+    # # Display Results side by side
 
-    st.subheader("📊 Investment Comparison Summary")
+    # st.subheader("📊 Investment Comparison Summary")
 
-    col1, col2 = st.columns(2)
+    # col1, col2 = st.columns(2)
 
-    with col1:
-        st.metric("🏘️ Real Estate FIRE Contribution", f"${re_contribution:,.0f}", help="Equity + rental cash flow minus closing and renovation costs.")
-    with col2:
-        st.metric("📈 Index Fund FIRE Contribution", f"${eq_contribution:,.0f}")
+    # with col1:
+    #     st.metric("🏘️ Real Estate FIRE Contribution", f"${re_contribution:,.0f}", help="Equity + rental cash flow minus closing and renovation costs.")
+    # with col2:
+    #     st.metric("📈 Index Fund FIRE Contribution", f"${eq_contribution:,.0f}")
 
-    # --- ROI Comparison (based on initial investment) ---
+    # # --- ROI Comparison (based on initial investment) ---
 
+    # col1, col2 = st.columns(2)
+
+    # with col1:
+    #     st.metric(
+    #         "🏘️ Real Estate ROI",
+    #         f"{real_estate_roi:.2f}x",
+    #         help="Net FIRE contribution divided by total upfront investment (including closing + renovation)."
+    #     )
+    # with col2:
+    #     st.metric(
+    #         "📈 Index Fund ROI",
+    #         f"{index_fund_roi:.2f}x",
+    #         help="Growth of your index portfolio compared to initial investment over the same time horizon."
+    #     )
+    
     real_estate_roi = re_contribution / initial_investment if initial_investment else 0
     index_fund_roi = eq_contribution / index_investment if index_investment else 0
 
-    col1, col2 = st.columns(2)
+    st.markdown(f"""
+    ### 📊 Investment Comparison Summary
 
-    with col1:
-        st.metric(
-            "🏘️ Real Estate ROI",
-            f"{real_estate_roi:.2f}x",
-            help="Net FIRE contribution divided by total upfront investment (including closing + renovation)."
-        )
-    with col2:
-        st.metric(
-            "📈 Index Fund ROI",
-            f"{index_fund_roi:.2f}x",
-            help="Growth of your index portfolio compared to initial investment over the same time horizon."
-        )
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#f2f2f2;">
+                <th style="text-align: left; padding: 8px;">📁 Strategy</th>
+                <th style="text-align: left; padding: 8px;">🔥 FIRE Contribution</th>
+                <th style="text-align: left; padding: 8px;">📈 ROI Multiple</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 8px;">🏘️ Real Estate</td>
+                <td style="padding: 8px;">${re_contribution:,.0f}</td>
+                <td style="padding: 8px;">{real_estate_roi:.2f}x</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px;">📈 Index Fund</td>
+                <td style="padding: 8px;">${eq_contribution:,.0f}</td>
+                <td style="padding: 8px;">{index_fund_roi:.2f}x</td>
+            </tr>
+        </tbody>
+    </table>
+    """, unsafe_allow_html=True)
+
 
     # Strategy Comparison Chart
-
     #
     #st.markdown("### 🔍 Visual Comparison of Cumulative FIRE Contributions")
     #st.subheader("📊 Year-by-Year FIRE Contributions")
@@ -547,7 +573,6 @@ if st.button("▶️ Run Investment Analyzer"):
         margin=dict(t=60, b=100)
     )
 
-
     # Initialize breakeven year
     breakeven_year = None
 
@@ -565,16 +590,19 @@ if st.button("▶️ Run Investment Analyzer"):
             text=f"🏁 Breakeven in {breakeven_year}",
             showarrow=True,
             arrowhead=2,
-            ax=40,
-            ay=-40,
+            ax=30,
+            ay=30,  # Pulls annotation toward lower-right
+            textangle=0,
             bgcolor="lightyellow",
             bordercolor="darkgoldenrod",
-            font=dict(size=12)
+            font=dict(size=12),
+            xref="x",
+            yref="y"
         )
     else:
         comparison_fig.add_annotation(
             xref="paper", yref="paper",
-            x=0.99, y=1.15,
+            x=0.99, y=0.15,
             showarrow=False,
             text="⚠️ No breakeven: Index Fund leads throughout",
             font=dict(size=13),
@@ -609,13 +637,16 @@ if st.button("▶️ Run Investment Analyzer"):
 
     # YoY Table
 
-    st.subheader("📊 Year-by-Year FIRE Contributions")
-    st.caption("💡 Year 0 reflects the upfront investment costs for the real estate strategy, resulting in a lower starting point.")
+    # Reset index and drop the "Year" column (assuming it's the index)
+    fire_df_display = fire_df.reset_index(drop=True)
 
+    # Or if "Year" becomes a column after reset and you want to drop it:
+    # fire_df_display = fire_df.reset_index().drop(columns=["Year"])
+
+    # Highlight function stays the same
     def highlight_winner(row):
         re_value = row["Real Estate (Cumulative)"]
         eq_value = row["Index Fund (Cumulative)"]
-
         styles = [""] * len(row)
         if eq_value > re_value:
             styles[row.index.get_loc("Index Fund (Cumulative)")] = "background-color: lightgreen"
@@ -623,7 +654,8 @@ if st.button("▶️ Run Investment Analyzer"):
             styles[row.index.get_loc("Real Estate (Cumulative)")] = "background-color: lightyellow"
         return styles
 
-    styled_df = fire_df.style \
+    # Apply formatting and highlighting to modified DataFrame
+    styled_df = fire_df_display.style \
         .format({
             "Real Estate (Annual)": "${:,.0f}",
             "Real Estate (Cumulative)": "${:,.0f}",
@@ -631,8 +663,12 @@ if st.button("▶️ Run Investment Analyzer"):
             "Index Fund (Cumulative)": "${:,.0f}"
         }) \
         .apply(highlight_winner, axis=1)
-        
-    st.dataframe(styled_df)
+
+    # Display without the index column
+    st.subheader("📊 Year-by-Year FIRE Contributions")
+    st.caption("💡 Year 0 reflects the upfront investment costs for the real estate strategy, resulting in a lower starting point.")
+    st.dataframe(styled_df, hide_index=True)
+
 
     # --- 🔍 Strategic Insight Summary ---
 
@@ -675,7 +711,6 @@ if st.button("▶️ Run Investment Analyzer"):
     - 🟨 Years where real estate is ahead
     - 🟩 Years where index fund is ahead
     """)
-
 
     # # Breakeven logic
 

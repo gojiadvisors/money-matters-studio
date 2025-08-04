@@ -340,9 +340,6 @@ if st.session_state["run_model"]:
     )
 
     equity_df = pd.DataFrame(equity_records)
-    
-    # --- Title ---
-    st.markdown("### 🔥 Real Estate FIRE Summary")
 
     # --- Equity & Cash Flow Calculation ---
     equity_df = project_property_equity(
@@ -367,45 +364,58 @@ if st.session_state["run_model"]:
     equity_label = "🏠 Real Equity Built" if adjust_for_inflation else "🏠 Equity Built"
     cashflow_label = "💵 Inflation-Adjusted Rental Income" if adjust_for_inflation else "💵 Rental Income"
 
+    # --- Title ---
+    #st.markdown("### 🔥 Real Estate FIRE Summary")
+    # # --- FIRE-Focused Metrics ---
+    # col1, col2 = st.columns(2)
+    # with col1:
+    #     st.metric(
+    #         "💰 Total Initial Investment",
+    #         f"${property_initial_investment:,.0f}",
+    #         help="Upfront capital deployed including down payment, closing costs, and renovation expenses."
+    #     )
+    # with col2:
+    #     st.metric(
+    #         equity_label,
+    #         f"${projected_equity:,.0f}",
+    #         help="Equity gained from home appreciation and mortgage principal reduction."
+    #     )
+    # with col1:
+    #     st.metric(
+    #         cashflow_label,
+    #         f"${cashflow_total:,.0f}",
+    #         help="Cumulative rental income over the hold period."
+    #     )
+    # with col2:
+    #     st.metric(
+    #         "🔥 Net FIRE Contribution",
+    #         f"${net_fire_contribution:,.0f}",
+    #         help="Total rental income + equity minus closing and renovation costs."
+    #     )
+    # with col1:
+    #     st.metric(
+    #         "📆 Net FIRE Years Covered",
+    #         f"{net_fire_years_covered:.1f} yrs",
+    #         help="Number of years this investment could support your FIRE lifestyle, net of upfront costs."
+    #     )
+    # with col2:
+    #     st.metric(
+    #         "📈 ROI on Total Investment",
+    #         f"{(net_fire_contribution / property_initial_investment):.2f}x",
+    #         help="Return multiple based on initial investment including closing and renovation."
+    #     )
 
-    # --- FIRE-Focused Metrics ---
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric(
-            "💰 Total Initial Investment",
-            f"${property_initial_investment:,.0f}",
-            help="Upfront capital deployed including down payment, closing costs, and renovation expenses."
-        )
-    with col2:
-        st.metric(
-            equity_label,
-            f"${projected_equity:,.0f}",
-            help="Equity gained from home appreciation and mortgage principal reduction."
-        )
-    with col1:
-        st.metric(
-            cashflow_label,
-            f"${cashflow_total:,.0f}",
-            help="Cumulative rental income over the hold period."
-        )
-    with col2:
-        st.metric(
-            "🔥 Net FIRE Contribution",
-            f"${net_fire_contribution:,.0f}",
-            help="Total rental income + equity minus closing and renovation costs."
-        )
-    with col1:
-        st.metric(
-            "📆 Net FIRE Years Covered",
-            f"{net_fire_years_covered:.1f} yrs",
-            help="Number of years this investment could support your FIRE lifestyle, net of upfront costs."
-        )
-    with col2:
-        st.metric(
-            "📈 ROI on Total Investment",
-            f"{(net_fire_contribution / property_initial_investment):.2f}x",
-            help="Return multiple based on initial investment including closing and renovation."
-        )
+    st.markdown(f"""
+    ### 🏘️ Real Estate Investment Summary
+
+    | 💼 Metric | 💰 Your Result | 💡 What It Means |
+    |----------------------------|----------------------|------------------------------|
+    | **Total Initial Investment** | ${property_initial_investment:,.0f} | Capital deployed upfront: down payment, closing, renovation |
+    | **Projected Equity Gain** | ${projected_equity:,.0f} | Appreciation + mortgage payoff over the hold period |
+    | **Total Cashflow Earned** | ${cashflow_total:,.0f} | Rental income over the ownership horizon |
+    | **Net FIRE Contribution** | **${net_fire_contribution:,.0f}** | **Cashflow + equity minus closing and reno costs** |    | **Years of FIRE Covered** | {net_fire_years_covered:.1f} yrs | Years this investment could fund your FIRE lifestyle |
+    | **ROI on Investment** | {(net_fire_contribution / property_initial_investment):.2f}x | Return multiple based on total capital invested |
+    """)
 
     # --- FIRE Impact Narrative ---
     st.markdown(f"""
@@ -413,29 +423,49 @@ if st.session_state["run_model"]:
     after accounting for closing and renovation costs. This includes both cumulative rental income and equity growth, which become accessible when you sell.
     """)
 
-    # --- Traditional Metrics in Expander ---
+    # # --- Traditional Metrics in Expander ---
+    # with st.expander("📄 View Traditional Real Estate Metrics", expanded=False):
+    #     st.metric(
+    #         "💵 Year 1 Net Cash Flow",
+    #         f"${annual_cash_flow_year_1:,.0f}",
+    #         help="Net income after operating expenses and mortgage payments in Year 1."
+    #     )
+    #     st.metric(
+    #         "🏷️ Gross Yield",
+    #         f"{gross_yield:.2f}%",
+    #         help="Annual rent divided by purchase price (before expenses)."
+    #     )
+    #     st.metric(
+    #         "📊 Cash-on-Cash Return (Year 1)",
+    #         f"{cash_on_cash:.2f}%",
+    #         help="Return in Year 1 based on total upfront cash investment."
+    #     )
+    #     st.metric(
+    #         "🏦 Annual Mortgage Payment",
+    #         f"${annual_debt_service:,.0f}",
+    #         help="Principal and interest paid in the first year of your loan."
+    #     )
+    #     # --- Optional Year 1 Impact ---
+    #     if annual_cash_flow_year_1 != 0:
+    #         impact_msg = (
+    #             f"🎉 In Year 1, this property adds ${annual_cash_flow_year_1:,.0f}/year to your FIRE runway."
+    #             if annual_cash_flow_year_1 > 0 else
+    #             f"⚠️ In Year 1, negative cash flow of ${abs(annual_cash_flow_year_1):,.0f}/year could drag on your FIRE progress."
+    #         )
+    #         st.info(impact_msg)
+
     with st.expander("📄 View Traditional Real Estate Metrics", expanded=False):
-        st.metric(
-            "💵 Year 1 Net Cash Flow",
-            f"${annual_cash_flow_year_1:,.0f}",
-            help="Net income after operating expenses and mortgage payments in Year 1."
-        )
-        st.metric(
-            "🏷️ Gross Yield",
-            f"{gross_yield:.2f}%",
-            help="Annual rent divided by purchase price (before expenses)."
-        )
-        st.metric(
-            "📊 Cash-on-Cash Return (Year 1)",
-            f"{cash_on_cash:.2f}%",
-            help="Return in Year 1 based on total upfront cash investment."
-        )
-        st.metric(
-            "🏦 Annual Mortgage Payment",
-            f"${annual_debt_service:,.0f}",
-            help="Principal and interest paid in the first year of your loan."
-        )
-        # --- Optional Year 1 Impact ---
+        st.markdown(f"""
+        ### 🧾 Year 1 Investment Snapshot
+
+        | 🧮 Metric | 📊 Your Result | 💡 What It Means |
+        |-----------------------------|--------------------|----------------------------|
+        | **Year 1 Net Cash Flow** | ${annual_cash_flow_year_1:,.0f} | Net income after expenses and debt service |
+        | **Gross Yield** | {gross_yield:.2f}% | Rent ÷ purchase price (pre-expenses) |
+        | **Cash-on-Cash Return** | {cash_on_cash:.2f}% | ROI based on upfront cash deployed |
+        | **Annual Mortgage Payment** | ${annual_debt_service:,.0f} | Principal + interest in Year 1 |
+        """)
+
         if annual_cash_flow_year_1 != 0:
             impact_msg = (
                 f"🎉 In Year 1, this property adds ${annual_cash_flow_year_1:,.0f}/year to your FIRE runway."
@@ -443,6 +473,7 @@ if st.session_state["run_model"]:
                 f"⚠️ In Year 1, negative cash flow of ${abs(annual_cash_flow_year_1):,.0f}/year could drag on your FIRE progress."
             )
             st.info(impact_msg)
+
 
     st.markdown("### 📈 Equity Growth Over Time")
 
