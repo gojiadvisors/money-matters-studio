@@ -143,15 +143,17 @@ st.session_state["adjust_fire_expenses_for_inflation"] = adjust_fire_expenses_fo
 # --- CONVERSION ---
 inflation_rate /= 100
 
-def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, access_age=59.5):
+def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, include_illiquid=False, illiquid_assets=0, access_age=59.5):
     import datetime
 
     current_year = datetime.datetime.now().year
     access_year = current_year + int(access_age - user_age)
 
+    base_assets = liquid_assets + (illiquid_assets if include_illiquid else 0)
+
     if fire_year >= access_year:
         return (
-            liquid_assets + retirement_assets,
+            base_assets + retirement_assets,
             "✅ Retirement assets will be fully accessible at FIRE year.",
             {
                 "bridge_years": 0,
@@ -163,7 +165,7 @@ def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, 
         years_to_access = access_year - fire_year
         reduction_factor = max(0, 1 - (years_to_access / 10))
         partial_access = retirement_assets * reduction_factor
-        total_assets = liquid_assets + partial_access
+        total_assets = base_assets + partial_access
 
         if retirement_assets > 0:
             message = (
@@ -184,6 +186,7 @@ def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, 
         return total_assets, message, bridge_info
 
 
+
 # --- CALCULATION BLOCK ---
 if st.button("▶️ Calculate Years to FIRE"):
 
@@ -198,7 +201,8 @@ if st.button("▶️ Calculate Years to FIRE"):
     fire_year_guess = this_year + 1  # Temporary guess for bridge years
 
     effective_fire_assets, _, _ = get_effective_assets(
-        user_age, liquid_assets, retirement_assets, fire_year_guess
+        user_age, liquid_assets, retirement_assets, fire_year_guess,
+        include_illiquid=include_illiquid, illiquid_assets=illiquid_assets
     )
 
     # Step 2: First Estimation — FIRE Year
@@ -211,7 +215,8 @@ if st.button("▶️ Calculate Years to FIRE"):
 
     # Step 4: Get Effective FIRE Assets & Bridge Message
     effective_fire_assets, bridge_message, bridge_info = get_effective_assets(
-        user_age, liquid_assets, retirement_assets, fire_year
+        user_age, liquid_assets, retirement_assets, fire_year,
+        include_illiquid=include_illiquid, illiquid_assets=illiquid_assets
     )
 
     # Step 5: Final Estimation
