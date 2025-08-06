@@ -32,15 +32,14 @@ with st.expander("💡 What Role Does Real Estate Play in FIRE?", expanded=False
 This planner helps you answer a pivotal question:  
 <blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“How much does this property contribute toward my financial independence?”</blockquote>
 
-### What It Calculates:
-- **Net Cash Flow**: Rental income minus operating costs and loan payments  
-- **Equity Growth**: Year-by-year breakdown of appreciation and mortgage payoff  
-- **Wealth Timeline**: Property value vs loan balance over time  
-- **FIRE Summary**: Total projected cash flow + equity minus upfront costs, to reveal the property’s true FIRE contribution
-
 Adjust inputs like purchase year, appreciation rate, or expenses—and discover how your property helps you swap rent checks for freedom.
 """, unsafe_allow_html=True)
 
+# ### What It Calculates:
+# - **Net Cash Flow**: Rental income minus operating costs and loan payments  
+# - **Equity Growth**: Year-by-year breakdown of appreciation and mortgage payoff  
+# - **Wealth Timeline**: Property value vs loan balance over time  
+# - **FIRE Summary**: Total projected cash flow + equity minus upfront costs, to reveal the property’s true FIRE contribution
 
 # --- Inputs ---
 st.subheader("📋 Property Info")
@@ -410,11 +409,12 @@ if st.session_state["run_model"]:
 
     | 💼 Metric | 💰 Your Result | 💡 What It Means |
     |----------------------------|----------------------|------------------------------|
-    | **Total Initial Investment** | ${property_initial_investment:,.0f} | Capital deployed upfront: down payment, closing, renovation |
-    | **Projected Equity Gain** | ${projected_equity:,.0f} | Appreciation + mortgage payoff over the hold period |
-    | **Total Cashflow Earned** | ${cashflow_total:,.0f} | Rental income over the ownership horizon |
-    | **Net FIRE Contribution** | **${net_fire_contribution:,.0f}** | **Cashflow + equity minus closing and reno costs** |    | **Years of FIRE Covered** | {net_fire_years_covered:.1f} yrs | Years this investment could fund your FIRE lifestyle |
-    | **ROI on Investment** | {(net_fire_contribution / property_initial_investment):.2f}x | Return multiple based on total capital invested |
+    | **Total Initial Investment** | ${property_initial_investment:,.0f} | The total amount of money you put in upfront, including the down payment, closing costs, and any renovations. |
+    | **Projected Equity Gain** | ${projected_equity:,.0f} | How much value you build over time from your home going up in price and paying down the mortgage. |
+    | **Total Cashflow Earned** | ${cashflow_total:,.0f} | The total rent money you collect after expenses during the time you own the property. |
+    | **Net FIRE Contribution** | **${net_fire_contribution:,.0f}** | **The overall benefit this investment adds to your financial independence combining rent income and property value (minus costs).** |    
+    | **Years of FIRE Covered** | {net_fire_years_covered:.1f} yrs | How many years this investment could help pay for your lifestyle after you retire early. |
+    | **ROI on Investment** | {(net_fire_contribution / property_initial_investment):.2f}x | A simple way to see how much you got back compared to what you put in. (e.g. 2x means you doubled your money) |
     """)
 
     # --- FIRE Impact Narrative ---
@@ -460,10 +460,10 @@ if st.session_state["run_model"]:
 
         | 🧮 Metric | 📊 Your Result | 💡 What It Means |
         |-----------------------------|--------------------|----------------------------|
-        | **Year 1 Net Cash Flow** | ${annual_cash_flow_year_1:,.0f} | Net income after expenses and debt service |
-        | **Gross Yield** | {gross_yield:.2f}% | Rent ÷ purchase price (pre-expenses) |
-        | **Cash-on-Cash Return** | {cash_on_cash:.2f}% | ROI based on upfront cash deployed |
-        | **Annual Mortgage Payment** | ${annual_debt_service:,.0f} | Principal + interest in Year 1 |
+        | **Year 1 Net Cash Flow** | ${annual_cash_flow_year_1:,.0f} | The money you make (or lose) from rent after paying for expenses and the mortgage in the first year. |
+        | **Gross Yield** | {gross_yield:.2f}% | A quick way to see how much rent you earn compared to the purchase price (before subtracting expenses). |
+        | **Cash-on-Cash Return** | {cash_on_cash:.2f}% | How much profit you make in the first year compared to the cash you invested upfront. |
+        | **Annual Mortgage Payment** | ${annual_debt_service:,.0f} | The total amount you pay toward your loan (principal + interest) in the first year. |
         """)
 
         if annual_cash_flow_year_1 != 0:

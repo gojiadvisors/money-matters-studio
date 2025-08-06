@@ -518,25 +518,30 @@ if st.button("▶️ Run Investment Analyzer"):
     <table style="width:100%; border-collapse: collapse;">
         <thead>
             <tr style="background-color:#f2f2f2;">
-                <th style="text-align: left; padding: 8px;">📁 Strategy</th>
-                <th style="text-align: left; padding: 8px;">🔥 FIRE Contribution</th>
-                <th style="text-align: left; padding: 8px;">📈 ROI Multiple</th>
+                <th style="text-align: left; padding: 8px;">📁 Metric</th>
+                <th style="text-align: left; padding: 8px;">🏘️ Real Estate</th>
+                <th style="text-align: left; padding: 8px;">📈 Stock Index Fund</th>
+                <th style="text-align: left; padding: 8px;">💡 What It Means</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td style="padding: 8px;">🏘️ Real Estate</td>
+                <td style="padding: 8px;">🔥 FIRE Contribution</td>
                 <td style="padding: 8px;">${re_contribution:,.0f}</td>
-                <td style="padding: 8px;">{real_estate_roi:.2f}x</td>
+                <td style="padding: 8px;">${eq_contribution:,.0f}</td>
+                <td style="padding: 8px;">How much each strategy contributes toward financial independence and early retirement.</td>
             </tr>
             <tr>
-                <td style="padding: 8px;">📈 Index Fund</td>
-                <td style="padding: 8px;">${eq_contribution:,.0f}</td>
+                <td style="padding: 8px;">📈 ROI Multiple</td>
+                <td style="padding: 8px;">{real_estate_roi:.2f}x</td>
                 <td style="padding: 8px;">{index_fund_roi:.2f}x</td>
+                <td style="padding: 8px;">The total return on investment relative to the initial capital (higher means more growth).</td>
             </tr>
         </tbody>
     </table>
     """, unsafe_allow_html=True)
+
+
 
 
     # Strategy Comparison Chart
