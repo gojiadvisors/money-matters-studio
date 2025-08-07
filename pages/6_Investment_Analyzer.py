@@ -31,14 +31,15 @@ This module helps you answer the essential FIRE question:
 
 <blockquote style='color: #B00020; font-style: italic; font-size: 16px;'>“Should I invest in property or the stock market? Which one gets me to FIRE faster?”</blockquote>
 
-### What It Compares:
-- 🏘️ **Real Estate**: Net cash flow, equity buildup, and appreciation over time  
-- 📈 **Equity Markets**: Portfolio growth through compounding, dividend reinvestment, and consistent contributions
-- 🧮 **Total FIRE Contribution**: Real estate vs stock market outcomes, adjusted for net investment impact
-- 🔁 **Break-Even Analysis**: Year-by-year comparison to spotlight when one strategy pulls ahead
-
 This tool lets you simulate assumptions, explore trade-offs, and uncover the most effective wealth-building route based on your timeline and risk comfort.
 """, unsafe_allow_html=True)
+
+# ### What It Compares:
+# - 🏘️ **Real Estate**: Net cash flow, equity buildup, and appreciation over time  
+# - 📈 **Equity Markets**: Portfolio growth through compounding, dividend reinvestment, and consistent contributions
+# - 🧮 **Total FIRE Contribution**: Real estate vs stock market outcomes, adjusted for net investment impact
+# - 🔁 **Break-Even Analysis**: Year-by-year comparison to spotlight when one strategy pulls ahead
+
 
 # --- Shared Inputs (Planner-style) ---
 
@@ -76,7 +77,7 @@ st.warning(
 use_synced_investment = st.checkbox("🔗 Use same investment amount for both strategies", value=True)
 
 # Tabs for scenario input
-tab1, tab2 = st.tabs(["🏘️ Real Estate", "📈 Equity Market"])
+tab1, tab2 = st.tabs(["🏘️ Real Estate", "📈 Stock Market"])
 
 with tab1:
     st.subheader("🏘️ Real Estate Scenario")
@@ -541,9 +542,6 @@ if st.button("▶️ Run Investment Analyzer"):
     </table>
     """, unsafe_allow_html=True)
 
-
-
-
     # Strategy Comparison Chart
     #
     #st.markdown("### 🔍 Visual Comparison of Cumulative FIRE Contributions")
@@ -635,117 +633,144 @@ if st.button("▶️ Run Investment Analyzer"):
         bordercolor="gray"
     )
 
-
     st.plotly_chart(comparison_fig, use_container_width=True)
-    st.caption("🏁 Track how each strategy contributes to your financial independence year by year — with upfront investments reflected in Year 0.")
+    #st.caption("🏁 Track how each strategy contributes to your financial independence year by year — with upfront investments reflected in Year 0.")
 
+    # Pre-format values
+    re_total = f"${final_re:,.0f}"
+    eq_total = f"${final_eq:,.0f}"
+    breakeven = str(breakeven_year)
 
-    # YoY Table
-
-    # Reset index and drop the "Year" column (assuming it's the index)
-    fire_df_display = fire_df.reset_index(drop=True)
-
-    # Or if "Year" becomes a column after reset and you want to drop it:
-    # fire_df_display = fire_df.reset_index().drop(columns=["Year"])
-
-    # Highlight function stays the same
-    def highlight_winner(row):
-        re_value = row["Real Estate (Cumulative)"]
-        eq_value = row["Index Fund (Cumulative)"]
-        styles = [""] * len(row)
-        if eq_value > re_value:
-            styles[row.index.get_loc("Index Fund (Cumulative)")] = "background-color: lightgreen"
-        elif re_value > eq_value:
-            styles[row.index.get_loc("Real Estate (Cumulative)")] = "background-color: lightyellow"
-        return styles
-
-    # Apply formatting and highlighting to modified DataFrame
-    styled_df = fire_df_display.style \
-        .format({
-            "Real Estate (Annual)": "${:,.0f}",
-            "Real Estate (Cumulative)": "${:,.0f}",
-            "Index Fund (Annual)": "${:,.0f}",
-            "Index Fund (Cumulative)": "${:,.0f}"
-        }) \
-        .apply(highlight_winner, axis=1)
-
-    # Display without the index column
-    st.subheader("📊 Year-by-Year FIRE Contributions")
-    st.caption("💡 Year 0 reflects the upfront investment costs for the real estate strategy, resulting in a lower starting point.")
-    st.dataframe(styled_df, hide_index=True)
-
-
-    # --- 🔍 Strategic Insight Summary ---
-
-    # Analyze which strategy leads each year
-    real_estate_wins = []
-    index_fund_wins = []
-
-    for row in fire_yearly:
-        year = row["Year"]
-        re_cum = row["Real Estate (Cumulative)"]
-        eq_cum = row["Index Fund (Cumulative)"]
-
-        if re_cum > eq_cum:
-            real_estate_wins.append(year)
-        elif eq_cum > re_cum:
-            index_fund_wins.append(year)
-
-    # Final winner
-    if fire_yearly[-1]["Real Estate (Cumulative)"] > fire_yearly[-1]["Index Fund (Cumulative)"]:
-        final_winner = "🏘️ Real estate"
+    # Generate summary paragraph with HTML tags
+    if breakeven_year:
+        summary = (
+            f"<p>Over the modeled period, the real estate strategy begins to outperform index investing starting in <strong>{breakeven}</strong>, "
+            f"ultimately contributing <strong>{re_total}</strong> toward your financial independence journey. "
+            f"This includes both rental income and equity growth, net of upfront costs. "
+            f"The index fund strategy, while steadier, finishes with a total contribution of <strong>{eq_total}</strong>, "
+            f"making real estate the stronger performer in this scenario.</p>"
+        )
     else:
-        final_winner = "📈 Index fund"
+        summary = (
+            f"<p>Throughout the modeled period, the index fund strategy consistently contributes more toward your financial independence goal, "
+            f"ending with a total of <strong>{eq_total}</strong>. The real estate strategy, while valuable, finishes with <strong>{re_total}</strong>, "
+            f"reflecting the impact of upfront costs and slower early growth. "
+            f"In this scenario, index investing offers a more reliable path to FIRE.</p>"
+        )
 
-    # Summary message
-    st.markdown(f"""
-    ### 🔍 Strategic Insight
+    # Display in Streamlit
+    st.markdown(summary, unsafe_allow_html=True)
 
-    Based on your inputs:
+    st.markdown("---")
+    
+    with st.expander("📊 Year-by-Year FIRE Contribution Comparison", expanded=False):
 
-    - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
-    - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+        # YoY Table
 
-    In the year-by-year comparison table:
-    - 🟨 **Real estate outpaces index fund** in {len(real_estate_wins)} of {investment_years} years.
-    - 🟩 **Index fund leads** in {len(index_fund_wins)} years.
+        # Reset index and drop the "Year" column (assuming it's the index)
+        fire_df_display = fire_df.reset_index(drop=True)
 
-    Final outcome: **{final_winner}** is the stronger FIRE contributor over the full investment horizon.
+        # Or if "Year" becomes a column after reset and you want to drop it:
+        # fire_df_display = fire_df.reset_index().drop(columns=["Year"])
 
-    The table highlights:
-    - 🟨 Years where real estate is ahead
-    - 🟩 Years where index fund is ahead
-    """)
+        # Highlight function stays the same
+        def highlight_winner(row):
+            re_value = row["Real Estate (Cumulative)"]
+            eq_value = row["Index Fund (Cumulative)"]
+            styles = [""] * len(row)
+            if eq_value > re_value:
+                styles[row.index.get_loc("Index Fund (Cumulative)")] = "background-color: lightgreen"
+            elif re_value > eq_value:
+                styles[row.index.get_loc("Real Estate (Cumulative)")] = "background-color: lightyellow"
+            return styles
 
-    # # Breakeven logic
+        # Apply formatting and highlighting to modified DataFrame
+        styled_df = fire_df_display.style \
+            .format({
+                "Real Estate (Annual)": "${:,.0f}",
+                "Real Estate (Cumulative)": "${:,.0f}",
+                "Index Fund (Annual)": "${:,.0f}",
+                "Index Fund (Cumulative)": "${:,.0f}"
+            }) \
+            .apply(highlight_winner, axis=1)
 
-    # break_even_year = None
-    # for i in range(investment_years):
-    #     re_total = re_history[i]["equity"] + re_cashflow[i]
-    #     eq_total = eq_history[i]["portfolio_value"]
-
-    #     epsilon = 100  # buffer to prevent flip due to minor fluctuations
-    #     if eq_total > re_total + epsilon:
-    #         break_even_year = eq_history[i]["year"]
-    #         break
+        # Display without the index column
+        st.subheader("📊 Year-by-Year FIRE Contributions")
+        st.caption("💡 Year 0 reflects the upfront investment costs for the real estate strategy, resulting in a lower starting point.")
+        st.dataframe(styled_df, hide_index=True)
 
 
-    # # Display breakeven results
+        # --- 🔍 Strategic Insight Summary ---
 
-    # if break_even_year:
-    #     st.success(f"📅 Break-Even Year: Your equity market investment is projected to surpass real estate in Year {break_even_year}.")
-    # else:
-    #     st.info("🏠 Over this time horizon, real estate remains the stronger FIRE contributor.")
+        # Analyze which strategy leads each year
+        real_estate_wins = []
+        index_fund_wins = []
 
-    # # Final output summary
+        for row in fire_yearly:
+            year = row["Year"]
+            re_cum = row["Real Estate (Cumulative)"]
+            eq_cum = row["Index Fund (Cumulative)"]
 
-    # st.markdown(f"""
-    # ### 🔍 Strategic Insight
+            if re_cum > eq_cum:
+                real_estate_wins.append(year)
+            elif eq_cum > re_cum:
+                index_fund_wins.append(year)
 
-    # Based on your inputs:
+        # Final winner
+        if fire_yearly[-1]["Real Estate (Cumulative)"] > fire_yearly[-1]["Index Fund (Cumulative)"]:
+            final_winner = "🏘️ Real estate"
+        else:
+            final_winner = "📈 Index fund"
 
-    # - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
-    # - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+        # Summary message
+        st.markdown(f"""
+        ### 🔍 Strategic Insight
 
-    # {"The break-even point occurs in Year " + str(break_even_year) + ", when the index fund overtakes the property in total contribution." if break_even_year else "Real estate remains dominant over the full investment horizon."}
-    # """)
+        Based on your inputs:
+
+        - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
+        - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+
+        In the year-by-year comparison table:
+        - 🟨 **Real estate outpaces index fund** in {len(real_estate_wins)} of {investment_years} years.
+        - 🟩 **Index fund leads** in {len(index_fund_wins)} years.
+
+        Final outcome: **{final_winner}** is the stronger FIRE contributor over the full investment horizon.
+
+        The table highlights:
+        - 🟨 Years where real estate is ahead
+        - 🟩 Years where index fund is ahead
+        """)
+
+        # # Breakeven logic
+
+        # break_even_year = None
+        # for i in range(investment_years):
+        #     re_total = re_history[i]["equity"] + re_cashflow[i]
+        #     eq_total = eq_history[i]["portfolio_value"]
+
+        #     epsilon = 100  # buffer to prevent flip due to minor fluctuations
+        #     if eq_total > re_total + epsilon:
+        #         break_even_year = eq_history[i]["year"]
+        #         break
+
+
+        # # Display breakeven results
+
+        # if break_even_year:
+        #     st.success(f"📅 Break-Even Year: Your equity market investment is projected to surpass real estate in Year {break_even_year}.")
+        # else:
+        #     st.info("🏠 Over this time horizon, real estate remains the stronger FIRE contributor.")
+
+        # # Final output summary
+
+        # st.markdown(f"""
+        # ### 🔍 Strategic Insight
+
+        # Based on your inputs:
+
+        # - Your **real estate investment** could generate **${re_contribution:,.0f}** over {investment_years} years via equity and rental income.
+        # - Your **index fund investment** is projected to grow to **${eq_contribution:,.0f}** through compound returns and dividends.
+
+        # {"The break-even point occurs in Year " + str(break_even_year) + ", when the index fund overtakes the property in total contribution." if break_even_year else "Real estate remains dominant over the full investment horizon."}
+        # """)

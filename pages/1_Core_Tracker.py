@@ -319,6 +319,8 @@ if st.button("▶️ Calculate Years to FIRE"):
     if "🚧" in bridge_message and retirement_assets > 0 and progress_pct < 1.0:
         st.info("💡 To retire earlier, consider increasing liquid savings or exploring Roth IRA conversion ladders, SEPP withdrawals, or taxable asset growth. Find out more in the Advanced Planner (coming soon).")
 
+    st.markdown("---")
+
 # Net worth chart
 
     import datetime

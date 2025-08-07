@@ -454,26 +454,7 @@ if st.session_state["run_model"]:
     #         )
     #         st.info(impact_msg)
 
-    with st.expander("📄 View Traditional Real Estate Metrics", expanded=False):
-        st.markdown(f"""
-        ### 🧾 Year 1 Investment Snapshot
-
-        | 🧮 Metric | 📊 Your Result | 💡 What It Means |
-        |-----------------------------|--------------------|----------------------------|
-        | **Year 1 Net Cash Flow** | ${annual_cash_flow_year_1:,.0f} | The money you make (or lose) from rent after paying for expenses and the mortgage in the first year. |
-        | **Gross Yield** | {gross_yield:.2f}% | A quick way to see how much rent you earn compared to the purchase price (before subtracting expenses). |
-        | **Cash-on-Cash Return** | {cash_on_cash:.2f}% | How much profit you make in the first year compared to the cash you invested upfront. |
-        | **Annual Mortgage Payment** | ${annual_debt_service:,.0f} | The total amount you pay toward your loan (principal + interest) in the first year. |
-        """)
-
-        if annual_cash_flow_year_1 != 0:
-            impact_msg = (
-                f"🎉 In Year 1, this property adds ${annual_cash_flow_year_1:,.0f}/year to your FIRE runway."
-                if annual_cash_flow_year_1 > 0 else
-                f"⚠️ In Year 1, negative cash flow of ${abs(annual_cash_flow_year_1):,.0f}/year could drag on your FIRE progress."
-            )
-            st.info(impact_msg)
-
+    st.markdown("---")
 
     st.markdown("### 📈 Equity Growth Over Time")
 
@@ -505,6 +486,28 @@ if st.session_state["run_model"]:
     st.plotly_chart(fig, use_container_width=True)
     st.caption("📈 Property value builds slowly but steadily — this is your hidden wealth engine powering your FIRE path.")
 
+    st.markdown("---")
+
+    with st.expander("📄 View Traditional Real Estate Metrics", expanded=False):
+        st.markdown(f"""
+        ### 🧾 Year 1 Investment Snapshot
+
+        | 🧮 Metric | 📊 Your Result | 💡 What It Means |
+        |-----------------------------|--------------------|----------------------------|
+        | **Year 1 Net Cash Flow** | ${annual_cash_flow_year_1:,.0f} | The money you make (or lose) from rent after paying for expenses and the mortgage in the first year. |
+        | **Gross Yield** | {gross_yield:.2f}% | A quick way to see how much rent you earn compared to the purchase price (before subtracting expenses). |
+        | **Cash-on-Cash Return** | {cash_on_cash:.2f}% | How much profit you make in the first year compared to the cash you invested upfront. |
+        | **Annual Mortgage Payment** | ${annual_debt_service:,.0f} | The total amount you pay toward your loan (principal + interest) in the first year. |
+        """)
+
+        if annual_cash_flow_year_1 != 0:
+            impact_msg = (
+                f"🎉 In Year 1, this property adds ${annual_cash_flow_year_1:,.0f}/year to your FIRE runway."
+                if annual_cash_flow_year_1 > 0 else
+                f"⚠️ In Year 1, negative cash flow of ${abs(annual_cash_flow_year_1):,.0f}/year could drag on your FIRE progress."
+            )
+            st.info(impact_msg)
+
     cf_df = pd.DataFrame({
         "Year": [purchase_year - 1] + [purchase_year + i for i in range(years_held)],
         "Net Cash Flow": [-property_initial_investment] + cashflow_list
@@ -521,43 +524,45 @@ if st.session_state["run_model"]:
         "Net Cash Flow": cashflow_list
     })
 
-    st.markdown("### 💵 Cash Flow Trend Over Time")
+    with st.expander("💵 View Cash Flow Trend Over Time", expanded=False):
 
-    cf_fig = go.Figure()
+        st.markdown("### 💵 Cash Flow Trend Over Time")
 
-    cf_fig.add_trace(go.Scatter(
-        x=cf_df["Year"],
-        y=cf_df["Net Cash Flow"],
-        name="Net Cash Flow",
-        line=dict(color="blue"),
-        hovertemplate="$%{y:,.0f} net cash flow<br>in %{x}"
-    ))
+        cf_fig = go.Figure()
 
-    cf_fig.update_layout(
-        template="plotly_white",
-        xaxis_title="Year",
-        yaxis_title="Net Cash Flow ($)",
-        xaxis=dict(tickmode="linear", tickformat=".0f"),
-        title="Year-by-Year Cash Flow Projection" + (" (Purchasing Power in Today's Dollars)" if adjust_for_inflation else " (Nominal Future Dollars)")
-    )
+        cf_fig.add_trace(go.Scatter(
+            x=cf_df["Year"],
+            y=cf_df["Net Cash Flow"],
+            name="Net Cash Flow",
+            line=dict(color="blue"),
+            hovertemplate="$%{y:,.0f} net cash flow<br>in %{x}"
+        ))
 
-    cf_fig.add_annotation(
-        xref="paper", yref="paper",
-        x=0, y=1.12,
-        showarrow=False,
-        text=(
-            f"📉 Year 0 Investment: -${property_initial_investment:,.0f} → "
-            f"📈 Year 1 Cash Flow: ${year_1_cashflow:,.0f} → "
-            f"🏁 Year {year_final_label}: ${year_final_cashflow:,.0f} "
-            f"({ 'inflation-adjusted' if adjust_for_inflation else 'nominal' })"
-        ),
-        font=dict(size=14),
-        align="left",
-        bgcolor="rgba(255,255,255,0.85)",
-        bordercolor="lightgray",
-        borderwidth=1,
-    )
+        cf_fig.update_layout(
+            template="plotly_white",
+            xaxis_title="Year",
+            yaxis_title="Net Cash Flow ($)",
+            xaxis=dict(tickmode="linear", tickformat=".0f"),
+            title="Year-by-Year Cash Flow Projection" + (" (Purchasing Power in Today's Dollars)" if adjust_for_inflation else " (Nominal Future Dollars)")
+        )
 
-    st.plotly_chart(cf_fig, use_container_width=True)
-    st.caption("📊 This chart shows how rental income, inflation, and fixed mortgage payments interact over time.")
+        cf_fig.add_annotation(
+            xref="paper", yref="paper",
+            x=0, y=1.12,
+            showarrow=False,
+            text=(
+                f"📉 Year 0 Investment: -${property_initial_investment:,.0f} → "
+                f"📈 Year 1 Cash Flow: ${year_1_cashflow:,.0f} → "
+                f"🏁 Year {year_final_label}: ${year_final_cashflow:,.0f} "
+                f"({ 'inflation-adjusted' if adjust_for_inflation else 'nominal' })"
+            ),
+            font=dict(size=14),
+            align="left",
+            bgcolor="rgba(255,255,255,0.85)",
+            bordercolor="lightgray",
+            borderwidth=1,
+        )
+
+        st.plotly_chart(cf_fig, use_container_width=True)
+        st.caption("📊 This chart shows how rental income, inflation, and fixed mortgage payments interact over time.")
 
