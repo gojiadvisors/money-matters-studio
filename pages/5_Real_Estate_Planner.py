@@ -419,8 +419,7 @@ if st.session_state["run_model"]:
 
     # --- FIRE Impact Narrative ---
     st.markdown(f"""
-    Over **{years_out} years**, this property could contribute **${net_fire_contribution:,.0f}** toward your financial independence journey —  
-    after accounting for closing and renovation costs. This includes both cumulative rental income and equity growth, which become accessible when you sell.
+    Over **{years_out} years**, this property could contribute **${net_fire_contribution:,.0f}** toward your financial independence journey. This includes both cumulative rental income and equity growth, which become accessible when you sell.
     """)
 
     # # --- Traditional Metrics in Expander ---

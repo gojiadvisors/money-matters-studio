@@ -24,7 +24,7 @@ st.caption("Find out how close you are to financial independence.")
 
 with st.expander("💡 What Is FIRE and How Does This Tool Help?", expanded=False):
     st.markdown("""
-    **FIRE** stands for **Financial Independence - Retire Early**,  a movement built around achieving freedom and flexibility by covering your lifestyle without relying on active income.
+    **FIRE** stands for **Financial Independence - Retire Early**, a movement built around achieving freedom and flexibility by covering your lifestyle without relying on active income.
 
     This tool helps you quickly answer:
     """)
@@ -33,9 +33,16 @@ with st.expander("💡 What Is FIRE and How Does This Tool Help?", expanded=Fals
         unsafe_allow_html=True
     )
     st.markdown("""
+    Adjust your assumptions below and track your journey toward financial independence.
 
-Adjust your assumptions below and track your journey toward financial independence.
+    ---
+    🔍 **Note on Traditional Retirement Income**
+
+    This FIRE Tracker focuses on assets you can access before traditional retirement age (e.g. brokerage accounts & Roth contributions). It does **NOT** include income from Social Security, pensions, or annuities, which typically begin at age 62 or later.
+
+    For full retirement modeling, check out our **Advanced Planner**. (Coming Soon!)
     """)
+
 
 # ### What You’ll See:
 # - **Your FIRE Goal Number**: How much you need to achieve freedom
@@ -414,6 +421,7 @@ if st.button("▶️ Calculate Years to FIRE"):
     - Retiring in your 30s or 40s? You may need a higher FIRE number to support a longer lifespan.
     - Limited access to pre-tax accounts (401(k), IRA) before age ~59 can shift your timeline.
     - Strong savings and growth can produce similar timelines across different life stages.
+    - **Traditional retirement income** like Social Security or pensions is not included here, but it can significantly reduce portfolio drawdowns after age 62.
 
     Want to go deeper into withdrawal strategies and tax planning? The **Advanced Planner** is on the way.
     """)
