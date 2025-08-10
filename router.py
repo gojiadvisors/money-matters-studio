@@ -5,6 +5,19 @@ from utils_session import initialize_state_once
 
 initialize_state_once(DEFAULTS)
 
+import streamlit as st
+
+def inject_custom_css():
+    st.markdown("""
+        <style>
+        * {
+            border-radius: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+inject_custom_css()
+
 
 st.set_page_config(page_title="Money Matters Studio", page_icon="💰")
 
