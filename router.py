@@ -13,6 +13,11 @@ def inject_custom_css():
         * {
             border-radius: 0 !important;
         }
+                
+        div.block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
         </style>
     """, unsafe_allow_html=True)
 
