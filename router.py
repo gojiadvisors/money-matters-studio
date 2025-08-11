@@ -16,7 +16,7 @@ def inject_custom_css():
         
         div.block-container {
             padding-top: 3rem !important;
-            padding-bottom: 0rem !important;
+            padding-bottom: 6rem !important;
         }
 
         </style>

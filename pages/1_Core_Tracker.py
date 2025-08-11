@@ -18,6 +18,23 @@ with col3:
         clear_session_state()
         st.rerun()
 
+st.markdown("""
+    <style>
+    div[data-testid="stButton"] button {
+        padding: 2px 6px;
+        font-size: 0.75rem;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: none;
+    }
+    div[data-testid="stButton"] button:hover {
+        background-color: #e0e0e0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
 st.set_page_config(page_title="FIRE Tracker", page_icon="🔥")
 st.title("🔥 FIRE Tracker")
 st.caption("Find out how close you are to financial independence.")

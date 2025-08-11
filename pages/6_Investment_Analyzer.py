@@ -17,6 +17,22 @@ with col3:
         clear_session_state()
         st.rerun()
 
+st.markdown("""
+    <style>
+    div[data-testid="stButton"] button {
+        padding: 2px 6px;
+        font-size: 0.75rem;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: none;
+    }
+    div[data-testid="stButton"] button:hover {
+        background-color: #e0e0e0;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- Page Setup ---
 st.set_page_config(page_title="Investment Analyzer", page_icon="📊")
 
@@ -75,6 +91,36 @@ st.warning(
 
 #use_synced_investment = True  # You can later make this a checkbox toggle if desired
 use_synced_investment = st.checkbox("🔗 Use same investment amount for both strategies", value=True)
+
+# Inject tab styling
+st.markdown("""
+    <style>
+    button[aria-selected="true"] {
+        background-color: #ffe082 !important;
+        color: #333 !important;
+        border-bottom: 3px solid #ffb300 !important;
+        border-radius: 6px 6px 0 0 !important;
+        font-weight: 600 !important;
+        padding: 12px 20px !important;  /* Wider padding */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);  /* Optional depth */
+    }
+
+    button[aria-selected="false"] {
+        background-color: #fff8e1 !important;
+        color: #333 !important;
+        border-radius: 6px 6px 0 0 !important;
+        font-weight: 500 !important;
+        padding: 12px 20px !important;
+    }
+
+    button[aria-selected]:hover {
+        background-color: #ffecb3 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
 
 # Tabs for scenario input
 tab1, tab2 = st.tabs(["🏘️ Real Estate", "📈 Stock Market"])
@@ -662,7 +708,7 @@ if st.button("▶️ Run Investment Analyzer"):
     st.markdown(summary, unsafe_allow_html=True)
 
     st.markdown("---")
-    
+
     with st.expander("📊 Year-by-Year FIRE Contribution Comparison", expanded=False):
 
         # YoY Table
