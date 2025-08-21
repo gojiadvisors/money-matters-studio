@@ -4,6 +4,9 @@ from calculate_fi_progress import calculate_fire_number, estimate_years_to_fi
 import pandas as pd
 import datetime
 this_year = datetime.datetime.now().year
+from style_utils import inject_tab_style, inject_button_style
+inject_tab_style()
+inject_button_style()
 from session_defaults import DEFAULTS
 from utils_session import initialize_state_once
 initialize_state_once(DEFAULTS)  # ✅ now has the required argument
@@ -17,22 +20,6 @@ with col3:
     if st.button("🔄 Reset", help="Reset Session Inputs"):
         clear_session_state()
         st.rerun()
-
-st.markdown("""
-    <style>
-    div[data-testid="stButton"] button {
-        padding: 2px 6px;
-        font-size: 0.75rem;
-        background-color: #f9f9f9;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-shadow: none;
-    }
-    div[data-testid="stButton"] button:hover {
-        background-color: #e0e0e0;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 
 st.set_page_config(page_title="FIRE Tracker", page_icon="🔥")
@@ -212,7 +199,7 @@ def get_effective_assets(user_age, liquid_assets, retirement_assets, fire_year, 
 
 
 # --- CALCULATION BLOCK ---
-if st.button("▶️ Calculate Years to FIRE"):
+if st.button("👉 >> Calculate Years to FIRE >>"):
 
     # Step 1: FIRE Goal (Base)
     fire_goal_base = calculate_fire_number(fire_expenses, withdrawal_rate)
@@ -433,15 +420,18 @@ if st.button("▶️ Calculate Years to FIRE"):
 
 
     st.markdown("""
-    ⚠️ **Note:** This tool uses a phased drawdown strategy to reflect how asset accessibility changes across retirement stages, assuming ~30 years of withdrawals.
+    <div style='font-size: 0.85em; color: #6c757d; font-style: italic; line-height: 1.5; margin-top: 2em;'>
+    <b>Note:</b> This tool uses a phased drawdown strategy to reflect how asset accessibility changes across retirement stages, assuming ~30 years of withdrawals.</br></br>
+    <ul style='margin-left: 1.5em;'>
+    <li>Retiring in your 30s or 40s? You may need a higher FIRE number to support a longer lifespan.</li>
+    <li>Limited access to pre-tax accounts (401(k), IRA) before age ~59 can shift your timeline.</li>
+    <li>Strong savings and growth can produce similar timelines across different life stages.</li>
+    <li><b>Traditional retirement income</b> like Social Security or pensions is not included here, but it can significantly reduce portfolio drawdowns after age 62.</li>
+    </ul>
+    Want to go deeper into withdrawal strategies and tax planning? The <b>Advanced Planner</b> is on the way.
+    </div>
+    """, unsafe_allow_html=True)
 
-    - Retiring in your 30s or 40s? You may need a higher FIRE number to support a longer lifespan.
-    - Limited access to pre-tax accounts (401(k), IRA) before age ~59 can shift your timeline.
-    - Strong savings and growth can produce similar timelines across different life stages.
-    - **Traditional retirement income** like Social Security or pensions is not included here, but it can significantly reduce portfolio drawdowns after age 62.
-
-    Want to go deeper into withdrawal strategies and tax planning? The **Advanced Planner** is on the way.
-    """)
 
 
     # Optional prompt to explore more tools

@@ -1,12 +1,11 @@
 import streamlit as st
 from navigation import studio_nav
-from session_defaults import DEFAULTS
-from utils_session import initialize_state_once
+from session_defaults import init_session_state  # ✅ Use centralized initializer
 
-initialize_state_once(DEFAULTS)
+# --- Initialize Session State Once ---
+init_session_state()
 
-import streamlit as st
-
+# --- Inject Custom CSS ---
 def inject_custom_css():
     st.markdown("""
         <style>
@@ -24,8 +23,9 @@ def inject_custom_css():
 
 inject_custom_css()
 
-
+# --- Page Config ---
 st.set_page_config(page_title="Money Matters Studio", page_icon="💰")
 
+# --- Navigation ---
 selected_page = studio_nav()
 selected_page.run()

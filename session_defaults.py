@@ -1,10 +1,12 @@
 # session_defaults.py
 
+import streamlit as st
 import datetime
+
 this_year = datetime.datetime.now().year
 
 DEFAULTS = {
-    # FIRE Tracker
+    # --- Shared FIRE / Real Estate / Investment Defaults ---
     "user_age": 35,
     "liquid_assets": 300000,
     "retirement_assets": 400000,
@@ -18,7 +20,7 @@ DEFAULTS = {
     "inflation_option": "Average (2.5%)",
     "adjust_fire_expenses_for_inflation": True,
 
-    # Real Estate Planner
+    # --- Real Estate Planner Defaults ---
     "purchase_year": this_year,
     "purchase_price": 400000,
     "down_payment_pct": 25.0,
@@ -33,4 +35,33 @@ DEFAULTS = {
     "years_held": 15,
     "closing_costs": 10000.0,
     "renovation_costs": 15000.0,
+
+    # --- Lifestyle Budgeter Defaults ---
+    "annual_income": 80000,
+    "household_type": "Married with Kids",
+    "location_tier": "Major Metro Area",
+    "budget_template": "🏡 Suburban Comfort ($$)",
+    "col_multiplier": 1.35,
+    "use_budget_template_for_fire": True,
+
+    # --- Expense Template ---
+    "expense_template": {
+        "Housing": 2200, "Utilities": 300, "Food": 800, "Transportation": 500,
+        "Insurance": 400, "Phone/Internet": 150, "Childcare": 600, "Health & Wellness": 250,
+        "Subscriptions": 100, "Discretionary": 300, "Shopping": 250, "Personal Care": 150,
+        "Travel": 300, "Other": 200, "Investments": 600,
+        "Education": 300, "Giving": 100
+    },
+
+    "expense_categories": [
+        "Housing", "Utilities", "Food", "Transportation", "Insurance",
+        "Phone/Internet", "Childcare", "Health & Wellness", "Subscriptions",
+        "Discretionary", "Travel", "Shopping", "Personal Care", "Giving",
+        "Investments", "Education", "Other"
+    ]
 }
+
+def init_session_state():
+    for key, value in DEFAULTS.items():
+        if key not in st.session_state:
+            st.session_state[key] = value

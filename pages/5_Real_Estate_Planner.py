@@ -5,6 +5,9 @@ import plotly.graph_objects as go
 import numpy_financial as npf
 import datetime
 this_year = datetime.datetime.now().year
+from style_utils import inject_tab_style, inject_button_style
+inject_tab_style()
+inject_button_style()
 from session_defaults import DEFAULTS
 from utils_session import initialize_state_once
 initialize_state_once(DEFAULTS)  # ✅ now has the required argument
@@ -17,22 +20,6 @@ with col3:
     if st.button("🔄 Reset", help="Reset Session Inputs"):
         clear_session_state()
         st.rerun()
-
-st.markdown("""
-    <style>
-    div[data-testid="stButton"] button {
-        padding: 2px 6px;
-        font-size: 0.75rem;
-        background-color: #f9f9f9;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-shadow: none;
-    }
-    div[data-testid="stButton"] button:hover {
-        background-color: #e0e0e0;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 # --- Page Setup ---
 st.set_page_config(page_title="Real Estate Planner", page_icon="🏡")
@@ -310,7 +297,7 @@ def project_cashflow(annual_rent, annual_expenses, rental_growth_rate, annual_de
 
 # --- Results Section ---
 
-if st.button("▶️ Run Property Model"):
+if st.button("👉 >> Run Property Model >>"):
     st.session_state["run_model"] = True
 
 if st.session_state["run_model"]:

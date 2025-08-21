@@ -21,7 +21,7 @@ st.markdown("""
 | 🔧 Tool | 💡 What It Does | 🚦 Status |
 |--------|------------------|------------|
 | [🔥 **FIRE Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate time to FIRE from savings, expenses, and returns | ✅ Live |
-| 🎒 **Lifestyle Budgeter** | Build your ideal FIRE lifestyle and optimize spending | 🛠️ Coming Soon |
+| 🎒 **Lifestyle Budgeter** (https://money-matters-studio.streamlit.app/Lifestyle_Budgeter)  | Build your ideal FIRE lifestyle and optimize spending | 🧪 Beta |
 | 📤 **Withdrawal Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | 🛠️ Coming Soon |
 
 ---
@@ -31,7 +31,7 @@ st.markdown("""
 | 🛠️ Tool | 📈 What It Models | 🚦 Status |
 |--------|-------------------|------------|
 | [🏘️ **Real Estate Planner**](https://money-matters-studio.streamlit.app/Real_Estate_Planner) | Rental income, appreciation, and mortgage payoff over time | ✅ Live |
-| [📊 **Investment Analyzer**](https://money-matters-studio.streamlit.app/Investment_Analyzer) | Compare real estate and stock market strategies using synced assumptions | 🧪 Beta |
+| [📊 **Investment Analyzer**](https://money-matters-studio.streamlit.app/Investment_Analyzer) | Compare real estate and stock market strategies using synced assumptions | ✅ Live |
 | 🧠 **Advanced FIRE Planner** | Combine real estate, side income, and equity events for a tailored path | 🛠️ Coming Soon |
 
 """)
