@@ -21,7 +21,7 @@ st.markdown("""
 | 🔧 Tool | 💡 What It Does | 🚦 Status |
 |--------|------------------|------------|
 | [🔥 **FIRE Tracker**](https://money-matters-studio.streamlit.app/Core_Tracker) | Estimate time to FIRE from savings, expenses, and returns | ✅ Live |
-| 🎒 **Lifestyle Budgeter** (https://money-matters-studio.streamlit.app/Lifestyle_Budgeter)  | Build your ideal FIRE lifestyle and optimize spending | 🧪 Beta |
+| [🎒 **Lifestyle Budgeter**](https://money-matters-studio.streamlit.app/Lifestyle_Budgeter) | Build your ideal FIRE lifestyle and optimize spending | 🧪 Beta |
 | 📤 **Withdrawal Designer** | Design a tax-aware, sustainable withdrawal strategy post-FIRE | 🛠️ Coming Soon |
 
 ---
