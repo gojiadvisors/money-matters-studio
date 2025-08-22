@@ -100,6 +100,6 @@ def render_budget_analysis():
     st.markdown(summary)
 
     # --- Optional Sync ---
-    if st.button("👉 >> 🔄 Sync to FIRE Tracker >>"):
+    if st.button("👉 >> 🔄 Sync Spending ($) Across Planning Tools >>"):
         st.session_state["fire_expenses"] = annual_total
-        st.success(f"✅ Synced! FIRE Tracker now uses ${annual_total:,.0f} as your annual expense.")
+        st.success(f"✅ Synced! ${annual_total:,.0f} now powers your FIRE Tracker and other planning tools.")

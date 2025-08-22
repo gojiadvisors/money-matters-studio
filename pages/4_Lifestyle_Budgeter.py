@@ -7,6 +7,7 @@ from style_utils import inject_tab_style, inject_button_style
 inject_tab_style()
 inject_button_style()
 
+
 from budget_summary_analysis import render_budget_analysis
 from session_defaults import init_session_state
 from lifestyle_profiles import (
@@ -77,7 +78,7 @@ def render_expense_inputs():
         expense_categories = st.session_state.get("expense_categories", [])
 
         for group_name, categories in EXPENSE_GROUPS.items():
-            st.markdown(f"### {group_name}")
+            st.markdown(f"<div style='font-size:1.2rem; font-weight:600; margin-top:1.2em;'>{group_name}</div>", unsafe_allow_html=True)
             cols = st.columns(3)
 
             for i, category in enumerate(categories):
@@ -112,21 +113,25 @@ def render_expense_inputs():
 def render_fire_inputs():
     st.subheader("🔥 FIRE Inputs")
 
-    annual_income = st.number_input(
-        "Annual After-Tax Income ($)",
-        value=st.session_state.get("annual_income", 80000),
-        step=1000,
-        help="Your total household income after taxes. Used to assess lifestyle affordability."
-    )
-    st.session_state["annual_income"] = annual_income
+    col1, col2 = st.columns([1, 1])
 
-    annual_savings = st.number_input(
-        "Annual Savings ($)",
-        value=st.session_state.get("annual_savings", 30000),
-        step=100,
-        help="How much you aim to save each year toward FIRE."
-    )
-    st.session_state["annual_savings"] = annual_savings
+    with col1:
+        annual_income = st.number_input(
+            "Annual After-Tax Income ($)",
+            value=st.session_state.get("annual_income", 80000),
+            step=1000,
+            help="Your total household income after taxes. Used to assess lifestyle affordability."
+        )
+        st.session_state["annual_income"] = annual_income
+
+    with col2:
+        annual_savings = st.number_input(
+            "Annual Savings ($)",
+            value=st.session_state.get("annual_savings", 30000),
+            step=100,
+            help="How much you aim to save each year toward FIRE."
+        )
+        st.session_state["annual_savings"] = annual_savings
 
 # --- Lifestyle Selector UI ---
 def render_lifestyle_selector():
@@ -134,57 +139,70 @@ def render_lifestyle_selector():
 
     disabled = st.session_state.get("expenses_customized", False)
 
-    household_type = st.selectbox(
-        "👥 Household Type",
-        options=HOUSEHOLD_TYPES,
-        index=HOUSEHOLD_TYPES.index(
-            st.session_state.get("household_type", "Married with Kids")
-        ),
-        help="Used to scale default expenses based on household size, life stage, and financial priorities.",
-        disabled=disabled
-    )
-    st.session_state["household_type"] = household_type
+    col1, col2, col3 = st.columns([0.95, 1, 1.05])
 
-    location_tier = st.selectbox(
-        "📍 Location Tier",
-        options=LOCATION_TIERS,
-        index=LOCATION_TIERS.index(
-            st.session_state.get("location_tier", "Major Metro Area")
-        ),
-        help="Adjusts cost-of-living multiplier based on your geographic region.",
-        disabled=disabled
-    )
-    st.session_state["location_tier"] = location_tier
+    with col1:
+        household_type = st.selectbox(
+            "👥 Household Type",
+            options=HOUSEHOLD_TYPES,
+            index=HOUSEHOLD_TYPES.index(
+                st.session_state.get("household_type", "Married with Kids")
+            ),
+            help="Used to scale default expenses based on household size, life stage, and financial priorities.",
+            disabled=disabled
+        )
+        st.session_state["household_type"] = household_type
 
-    lifestyle_options = [
-        "🧘‍♀️ Lean & Serene ($)",
-        "🏡 Suburban Comfort ($$)",
-        "🏙️ Urban Explorer ($$$)",
-        "🎨 Creative Nomad ($$$)",
-        "✈️ Jetsetter ($$$$)"
-    ]
+    with col2:
+        location_tier = st.selectbox(
+            "📍 Location Tier",
+            options=LOCATION_TIERS,
+            index=LOCATION_TIERS.index(
+                st.session_state.get("location_tier", "Major Metro Area")
+            ),
+            help="Adjusts cost-of-living multiplier based on your geographic region.",
+            disabled=disabled
+        )
+        st.session_state["location_tier"] = location_tier
 
-    budget_template = st.selectbox(
-        "🧬 Lifestyle Template",
-        options=lifestyle_options,
-        index=lifestyle_options.index(
-            st.session_state.get("budget_template", "🏡 Suburban Comfort ($$)")
-        ),
-        help="Choose a lifestyle profile to pre-fill your expense categories. You can customize them in the next tab.",
-        disabled=disabled
-    )
-    st.session_state["budget_template"] = budget_template
+    with col3:
+        lifestyle_options = [
+            "🧘‍♀️ Lean & Serene ($)",
+            "🏡 Suburban Comfort ($$)",
+            "🏙️ Urban Explorer ($$$)",
+            "🎨 Creative Nomad ($$$)",
+            "✈️ Jetsetter ($$$$)"
+        ]
+        budget_template = st.selectbox(
+            "🧬 Lifestyle Template",
+            options=lifestyle_options,
+            index=lifestyle_options.index(
+                st.session_state.get("budget_template", "🏡 Suburban Comfort ($$)")
+            ),
+            help="Choose a lifestyle profile to pre-fill your expense categories. You can customize them in the next tab.",
+            disabled=disabled
+        )
+        st.session_state["budget_template"] = budget_template
 
     if disabled:
         st.info("You've customized your expenses. To change lifestyle presets, reset your session below.")
 
-    if st.button("🔄 Reset Budget Session"):
+    if st.button("🔄 Reset Lifestyle Selection"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
 
 # --- Main App ---
 def run_lifestyle_budgeter():
+    def clear_session_state():
+        for key in st.session_state.keys():
+            del st.session_state[key]
+
+    col1, col2, col3 = st.columns([6, 1, 1])
+    with col3:
+        if st.button("🔄 Reset", help="Reset Session Inputs"):
+            clear_session_state()
+            st.rerun()
     st.title("🎒 Lifestyle Budgeter")
 
     with st.expander("💡 What Role Does Lifestyle Play in FIRE?", expanded=False):
@@ -198,17 +216,23 @@ def run_lifestyle_budgeter():
         Explore templates, adjust spending tiers, and see how your lifestyle stacks up against your income and savings goals.
         """, unsafe_allow_html=True)
 
-    st.warning("⚠️ Be sure to fill out the **FIRE Inputs**, **Lifestyle Selector**, and **Monthly Expenses** tabs below.\n\n")
+    st.warning("⚠️ Be sure to fill out **BOTH** tabs below.")
 
-    tabs = st.tabs(["🔥 FIRE Inputs", "🎯 Lifestyle Selector", "🧾 Monthly Expenses"])
+    tabs = st.tabs(["🧭 FIRE & Lifestyle Setup", "🧾 Monthly Expenses"])
+
     with tabs[0]:
         render_fire_inputs()
-    with tabs[1]:
+
+        # st.markdown("---")
+
         render_lifestyle_selector()
         apply_expense_template()
-    with tabs[2]:
+        st.warning("👉 Don't forget to head to the **Monthly Expenses** tab to fine-tune your budget.")
+
+    with tabs[1]:
         render_expense_inputs()
-    
+
+
     if st.session_state.get("show_summary", False):
         st.markdown("---")
         render_budget_analysis()
@@ -245,8 +269,6 @@ def run_lifestyle_budgeter():
         Users are encouraged to adjust inputs to reflect their actual spending.
         </div>
         """, unsafe_allow_html=True)
-
-
 
 # --- Run App ---
 if __name__ == "__main__":
