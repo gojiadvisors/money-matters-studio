@@ -184,6 +184,9 @@ def render_lifestyle_selector():
         )
         st.session_state["budget_template"] = budget_template
 
+    st.warning("👉 Your expenses have been pre-populated based on your lifestyle selections. " \
+    "   Now head to the **Monthly Expenses** tab to personalize and fine-tune your budget.")
+    
     if disabled:
         st.info("You've customized your expenses. To change lifestyle presets, reset your session below.")
 
@@ -194,6 +197,8 @@ def render_lifestyle_selector():
 
 # --- Main App ---
 def run_lifestyle_budgeter():
+    
+    # -- Reset button on upper right --
     def clear_session_state():
         for key in st.session_state.keys():
             del st.session_state[key]
@@ -203,8 +208,9 @@ def run_lifestyle_budgeter():
         if st.button("🔄 Reset", help="Reset Session Inputs"):
             clear_session_state()
             st.rerun()
-    st.title("🎒 Lifestyle Budgeter")
-
+    
+    st.title("🛍️ Lifestyle Budgeter")
+    # -- Intro Paragraph --
     with st.expander("💡 What Role Does Lifestyle Play in FIRE?", expanded=False):
         st.markdown("""
         **Lifestyle choices** shape both your day-to-day joy and your long-term financial trajectory.  
@@ -227,7 +233,6 @@ def run_lifestyle_budgeter():
 
         render_lifestyle_selector()
         apply_expense_template()
-        st.warning("👉 Don't forget to head to the **Monthly Expenses** tab to fine-tune your budget.")
 
     with tabs[1]:
         render_expense_inputs()
@@ -237,8 +242,9 @@ def run_lifestyle_budgeter():
         st.markdown("---")
         render_budget_analysis()
 
-        user_notes = st.text_area("📝 Add notes about this budget session (optional)", placeholder="Reflections, goals, or context...")
-        st.session_state["user_notes"] = user_notes
+        # -- User notes optional --
+        # user_notes = st.text_area("📝 Add notes about this budget session (optional)", placeholder="Reflections, goals, or context...")
+        # st.session_state["user_notes"] = user_notes
 
         from utils_export import get_budget_snapshot, render_export_buttons
         snapshot = get_budget_snapshot(st.session_state)

@@ -3,8 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 def render_budget_analysis():
-    st.markdown("### 🧾 Your Budget Overview")
-
+    # --- Retrieve Session Data ---
     monthly_expenses = st.session_state.get("expense_template", {})
     annual_income = st.session_state.get("annual_income", 0)
     annual_savings = st.session_state.get("annual_savings", 0)
@@ -25,8 +24,42 @@ def render_budget_analysis():
     monthly_goals = sum_group(GOALS_GIVING)
     monthly_total = sum(monthly_expenses.values())
     annual_total = monthly_total * 12
+    delta = annual_income - annual_total
+    savings_rate = round((annual_savings / annual_income) * 100, 1) if annual_income else 0
+    buffer = delta - annual_savings
 
-    # --- Display Table ---
+    # --- FIRE Impact First ---
+    st.markdown("### 🔥 FIRE Impact Summary")
+
+    if delta >= annual_savings:
+        st.success("✅ Your lifestyle supports your FIRE plan.")
+    else:
+        st.error("⚠️ Your lifestyle may be outpacing your FIRE savings target.")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("💰 Income", f"${annual_income:,.0f}")
+    col2.metric("🧾 Spending", f"${annual_total:,.0f}")
+    col3.metric("📈 Target Savings", f"${annual_savings:,.0f}")
+
+    if delta >= annual_savings:
+        st.markdown(f"""
+        **📝 Summary:** You're saving \\${annual_savings:,.0f} annually ({savings_rate}%),  
+        with a buffer of \\${buffer:,.0f} beyond your FIRE target.  
+        Your current spending leaves room for flexibility and continued progress.
+        """)
+    else:
+        shortfall = annual_savings - delta
+        st.markdown(f"""
+        **📝 Summary:** Your current spending of \\${annual_total:,.0f} exceeds your income by \\${-delta:,.0f},  
+        leaving a shortfall of \\${shortfall:,.0f} below your FIRE savings target.  
+        Consider adjusting high-impact categories or revisiting your savings goals.
+        """)
+
+    st.markdown("---")
+
+    # --- Budget Breakdown ---
+    st.markdown("### 🧾 Your Budget Overview")
+
     st.markdown(f"""
     | 🏷️ Category Group | 💸 Monthly Amount | 📅 Annual Amount |
     |-------------------|-------------------|------------------|
@@ -65,41 +98,8 @@ def render_budget_analysis():
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("---")
-
-    # --- FIRE Impact Summary ---
-    st.markdown("### 🔥 FIRE Impact Summary")
-    delta = annual_income - annual_total
-    savings_rate = round((annual_savings / annual_income) * 100, 1) if annual_income else 0
-    buffer = delta - annual_savings
-
-    if delta >= annual_savings:
-        st.success("✅ Your lifestyle supports your FIRE plan.")
-    else:
-        st.error("⚠️ Your lifestyle may be outpacing your FIRE savings target.")
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("💰 Income", f"${annual_income:,.0f}")
-    col2.metric("🧾 Spending", f"${annual_total:,.0f}")
-    col3.metric("📈 Target Savings", f"${annual_savings:,.0f}")
-
-    if delta >= annual_savings:
-        summary = (
-            f"**📝 Summary:** You're saving \\${annual_savings:,.0f} annually ({savings_rate}%), "
-            f"with a buffer of \\${buffer:,.0f} beyond your FIRE target. "
-            f"Your current spending leaves room for flexibility and continued progress."
-        )
-    else:
-        shortfall = annual_savings - delta
-        summary = (
-            f"**📝 Summary:** Your current spending of \\${annual_total:,.0f} exceeds your income by \\${-delta:,.0f}, "
-            f"leaving a shortfall of \\${shortfall:,.0f} below your FIRE savings target. "
-            f"Consider adjusting high-impact categories or revisiting your savings goals."
-        )
-
-    st.markdown(summary)
-
     # --- Optional Sync ---
-    if st.button("👉 >> 🔄 Sync Spending ($) Across Planning Tools >>"):
+    if st.button("👉 >> 🔄 Sync Spending ($) >>"):
         st.session_state["fire_expenses"] = annual_total
         st.success(f"✅ Synced! ${annual_total:,.0f} now powers your FIRE Tracker and other planning tools.")
+
