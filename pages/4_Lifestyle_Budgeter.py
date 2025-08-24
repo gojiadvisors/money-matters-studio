@@ -6,8 +6,7 @@ from style_utils import inject_tab_style, inject_button_style
 
 inject_tab_style()
 inject_button_style()
-
-
+from input_utils import synced_number_input
 from budget_summary_analysis import render_budget_analysis
 from session_defaults import init_session_state
 from lifestyle_profiles import (
@@ -15,7 +14,8 @@ from lifestyle_profiles import (
     LOCATION_MULTIPLIERS,
     EXPENSE_CATEGORIES,
     HOUSEHOLD_TYPES,
-    LOCATION_TIERS
+    LOCATION_TIERS,
+    CATEGORY_HELP
 )
 
 # --- Initialize Session State ---
@@ -83,30 +83,46 @@ def render_expense_inputs():
 
             for i, category in enumerate(categories):
                 label = CATEGORY_LABELS.get(category, category)
+                help_text = CATEGORY_HELP.get(category, "")  # fallback to empty string if missing
                 default_value = expense_template.get(category, 0)
                 current_value = st.session_state.get(f"{category}_expense", default_value)
 
                 with cols[i % 3]:
-                    value = st.number_input(
+
+                    value = synced_number_input(
                         label,
+                        session_key=f"{category}_expense",
+                        default=default_value,
                         min_value=-1,
-                        value=current_value,
-                        step=50
+                        step=50,
+                        help=help_text
                     )
-                    st.session_state[f"{category}_expense"] = value
 
-        updated_template = {
-            category: st.session_state.get(f"{category}_expense", 0)
-            for category in expense_categories
-        }
+        expense_template = st.session_state.get("expense_template", {})
+        expense_categories = st.session_state.get("expense_categories", [])
 
-        # Detect if user has customized any values
-        if updated_template != st.session_state.get("expense_template", {}):
+        prior_template = expense_template
+        customized = False
+        updated_template = {}
+
+        for category in expense_categories:
+            prior = prior_template.get(category, 0)
+            current = st.session_state.get(f"{category}_expense", prior)
+            updated_template[category] = current
+            if current != prior:
+                customized = True
+
+        # Detect customization and rerun only once
+        if customized and not st.session_state.get("expenses_customized", False):
             st.session_state["expenses_customized"] = True
+            st.rerun()
 
+        # Update session template
         st.session_state["expense_template"] = updated_template
-        if st.button("👉 >> 📄 Generate Budget Report >>"):
-            st.session_state["show_summary"] = True
+
+    st.session_state["expense_template"] = updated_template
+    if st.button("👉 >> 📄 Generate Budget Report >>"):
+        st.session_state["show_summary"] = True
 
 
 # --- FIRE Input UI ---
@@ -114,24 +130,25 @@ def render_fire_inputs():
     st.subheader("🔥 FIRE Inputs")
 
     col1, col2 = st.columns([1, 1])
+    
 
     with col1:
-        annual_income = st.number_input(
+        annual_income = synced_number_input(
             "Annual After-Tax Income ($)",
-            value=st.session_state.get("annual_income", 80000),
+            "annual_income",
+            80000,
             step=1000,
             help="Your total household income after taxes. Used to assess lifestyle affordability."
         )
-        st.session_state["annual_income"] = annual_income
 
     with col2:
-        annual_savings = st.number_input(
+        annual_savings = synced_number_input(
             "Annual Savings ($)",
-            value=st.session_state.get("annual_savings", 30000),
+            "annual_savings",
+            30000,
             step=100,
             help="How much you aim to save each year toward FIRE."
         )
-        st.session_state["annual_savings"] = annual_savings
 
 # --- Lifestyle Selector UI ---
 def render_lifestyle_selector():

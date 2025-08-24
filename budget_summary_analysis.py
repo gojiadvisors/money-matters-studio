@@ -43,16 +43,12 @@ def render_budget_analysis():
 
     if delta >= annual_savings:
         st.markdown(f"""
-        **📝 Summary:** You're saving \\${annual_savings:,.0f} annually ({savings_rate}%),  
-        with a buffer of \\${buffer:,.0f} beyond your FIRE target.  
-        Your current spending leaves room for flexibility and continued progress.
+        **📝 Summary:** You're saving \\${annual_savings:,.0f} annually ({savings_rate}%), with a buffer of \\${buffer:,.0f} beyond your FIRE target. Your current spending leaves room for flexibility and continued progress.
         """)
     else:
         shortfall = annual_savings - delta
         st.markdown(f"""
-        **📝 Summary:** Your current spending of \\${annual_total:,.0f} exceeds your income by \\${-delta:,.0f},  
-        leaving a shortfall of \\${shortfall:,.0f} below your FIRE savings target.  
-        Consider adjusting high-impact categories or revisiting your savings goals.
+        **📝 Summary:** Your current spending of \\${annual_total:,.0f} exceeds your income by \\${-delta:,.0f}, leaving a shortfall of \\${shortfall:,.0f} below your FIRE savings target. Consider adjusting high-impact categories or revisiting your savings goals.
         """)
 
     st.markdown("---")

@@ -8,6 +8,7 @@ from style_utils import inject_tab_style, inject_button_style
 inject_tab_style()
 inject_button_style()
 from session_defaults import DEFAULTS
+from input_utils import synced_number_input
 from utils_session import initialize_state_once
 initialize_state_once(DEFAULTS)  # ✅ now has the required argument
 
